@@ -4,15 +4,10 @@
  */
 
 import { on, closest, createElements, deepMerge, toElement } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { InfoWindow } from '../ui/InfoWindow.js';
 import { Reference } from '../bible/BibleReference.js';
 import { EventEmitterMixin } from '../common/EventEmitter.js';
-
-// Default config
-updateConfig({
-  enableMediaLibraryPlugin: true
-});
 
 /**
  * Create a media library plugin

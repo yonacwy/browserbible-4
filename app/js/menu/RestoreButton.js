@@ -4,12 +4,7 @@
  */
 
 import { createElements, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
-
-// Default config
-updateConfig({
-  enableRestore: false
-});
+import { getConfig } from '../core/config.js';
 
 /**
  * Create restore button

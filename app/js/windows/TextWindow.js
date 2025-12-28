@@ -302,6 +302,9 @@ export class TextWindowComponent extends BaseWindow {
         (data.type === 'bible' || data.type === 'commentary' || data.type === 'videobible' || data.type === 'deafbible') &&
         data.locationInfo != null) {
       this.scroller.scrollTo(data.locationInfo.fragmentid, data.locationInfo.offset);
+    } else if (data.messagetype === 'maprequest' && data.requesttype === 'currentcontent') {
+      // MapWindow is requesting current content (happens when MapWindow is created after BibleWindow)
+      this.scroller.broadcastCurrentContent();
     }
   }
 
@@ -458,10 +461,6 @@ export class CommentaryWindow extends TextWindowComponent {
   }
 }
 
-export const TextWindow = (id, parent, initData, textType) => {
-  console.warn('TextWindow factory function is deprecated, use web component instead');
-  return null;
-};
 registerWindowComponent('bible-window', BibleWindow, {
   windowType: 'bible',
   displayName: 'Bible',
@@ -473,5 +472,8 @@ registerWindowComponent('commentary-window', CommentaryWindow, {
   displayName: 'Commentary',
   paramKeys: { textid: 't', fragmentid: 'v' }
 });
+
+// Export TextWindow as an alias for TextWindowComponent for backwards compatibility
+export const TextWindow = TextWindowComponent;
 
 export default TextWindowComponent;

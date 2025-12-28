@@ -4,14 +4,9 @@
  */
 
 import { createElements, on, data, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { getAllWindowTypes, getApp } from '../core/registry.js';
 import { PlaceKeeper } from '../common/Navigation.js';
-
-// Default config
-updateConfig({
-  windowTypesOrder: []
-});
 
 /**
  * Create add window buttons
@@ -67,7 +62,6 @@ export function AddWindowButton(_parentNode, _menu) {
     on(buttonMenu, 'click', '.window-add', function(e) {
       const label = this;
       const settings = data(label, 'init');
-      console.log('AddWindowButton clicked, settings:', settings);
       const app = getApp();
 
       // when starting a bible or commentary window, try to match it up with the others
@@ -93,7 +87,6 @@ export function AddWindowButton(_parentNode, _menu) {
 
       if (PlaceKeeper) PlaceKeeper.storePlace();
       if (app?.windowManager) {
-        console.log('Adding window type:', settings.type, 'with data:', settings.data);
         app.windowManager.add(settings.type, settings.data);
       }
       if (PlaceKeeper) PlaceKeeper.restorePlace();

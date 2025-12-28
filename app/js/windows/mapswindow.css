@@ -52,12 +52,14 @@
 	opacity: 1;
 }
 
-.map-marker circle {
-	transition: fill 0.2s ease, r 0.1s ease;
+/* Icon styling */
+.map-marker-icon {
+	transition: transform 0.2s ease, opacity 0.3s ease;
 }
 
-.map-marker:hover circle {
-	fill: #ff6b6b !important;
+.map-marker:hover .map-marker-icon {
+	transform: scale(1.15);
+	filter: brightness(1.2);
 }
 
 /* Info popup */
@@ -114,8 +116,8 @@
 	background: var(--window-background, #1a1a1a);
 }
 
-.dark .map-marker circle {
-	stroke: #333;
+.dark .map-marker-icon {
+	opacity: 0.95;
 }
 
 .dark .map-info-popup {
@@ -171,6 +173,11 @@
 	font-size: 11px;
 }
 
+/* Map options button */
+.map-options-button {
+	background-image: url(../../css/images/gear.svg);
+}
+
 /* Dark mode */
 .dark .map-search-suggestions {
 	background: var(--header-background, #2a2a2a);
@@ -184,4 +191,53 @@
 .dark .map-suggestion-item:hover,
 .dark .map-suggestion-item.selected {
 	background: var(--highlight-background, #3a3a3a);
+}
+
+/* Map Options Popover */
+.map-options-popover {
+	position: absolute;
+	background: var(--color-background);
+	font-size: 80%;
+	box-shadow: var(--shadow-popup);
+	border: 1px solid var(--color-border, #ccc);
+	margin: 0;
+	inset: auto;
+}
+
+.map-options-popover .map-options-header {
+	color: var(--color-text-inverse);
+	background: var(--color-background-active);
+	padding: 8px;
+	font-weight: bold;
+}
+
+.map-options-popover .map-options-main {
+	padding: 10px;
+	max-height: 400px;
+	overflow: auto;
+}
+
+.map-options-popover .division-list {
+	margin-bottom: 12px;
+}
+
+.map-options-popover .division-header {
+	display: block;
+	font-weight: bold;
+	margin-bottom: 4px;
+	cursor: pointer;
+}
+
+.map-options-popover .division-name {
+	display: block;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.map-options-popover .division-list-items {
+	padding: 0 0 0 5px;
+}
+
+.map-options-popover[dir=rtl] .division-list-items {
+	padding: 0 5px 0 0;
 }

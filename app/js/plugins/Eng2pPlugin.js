@@ -6,18 +6,10 @@
  */
 
 import { closest, createElements, deepMerge, toElement } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { MovableWindow } from '../ui/MovableWindow.js';
 import { EventEmitterMixin } from '../common/EventEmitter.js';
 import AppSettings from '../common/AppSettings.js';
-
-// Default config
-updateConfig({
-  enableEng2pPlugin: true,
-  eng2pEnableAll: true,
-  eng2pDefaultSetting: 'none',
-  eng2pShowWindowAtStartup: false
-});
 
 // English second person plural data
 const eng2p = {

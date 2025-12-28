@@ -4,15 +4,9 @@
  */
 
 import { createElements, qs, toElement } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { i18n } from '../lib/i18n.js';
 import { MovableWindow } from '../ui/MovableWindow.js';
-
-// Default config
-updateConfig({
-  enableFeedback: false,
-  feedbackUrl: ''
-});
 
 /**
  * Create feedback button and dialog

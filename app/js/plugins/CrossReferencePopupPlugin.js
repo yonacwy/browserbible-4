@@ -4,17 +4,12 @@
  */
 
 import { on, closest, deepMerge, toElement } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { InfoWindow } from '../ui/InfoWindow.js';
 const hasTouch = 'ontouchend' in document;
 import { Reference } from '../bible/BibleReference.js';
 import { EventEmitterMixin } from '../common/EventEmitter.js';
 import { PlaceKeeper, TextNavigation } from '../common/Navigation.js';
-
-// Default config
-updateConfig({
-  enableCrossReferencePopupPlugin: true
-});
 
 // Store global handlers for cross-plugin communication
 let handleBibleRefClick = null;

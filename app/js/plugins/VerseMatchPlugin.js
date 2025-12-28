@@ -4,13 +4,8 @@
  */
 
 import { on } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 const hasTouch = 'ontouchend' in document;
-
-// Default config
-updateConfig({
-  enableVerseMatchPlugin: true
-});
 
 /**
  * Create a verse match plugin

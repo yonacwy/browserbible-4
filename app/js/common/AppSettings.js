@@ -39,7 +39,8 @@ class AppSettingsManager {
 
     try {
       storedValue = JSON.parse(storedValue);
-    } catch (_ex) {
+    } catch {
+      // Ignore JSON parse errors
     }
 
     return { ...returnValue, ...storedValue };

@@ -264,67 +264,96 @@ export class ParallelsWindowComponent extends BaseWindow {
     }
   }
 
+  createParallelHeader(title, description) {
+    return [
+      `<h1>${this.escapeHtml(title)}</h1>`,
+      `<p class="parallel-description">${this.escapeHtml(description)}</p>`,
+      '<div class="parallels-buttons">',
+      `<span class="parallel-show-all">${i18n.t('windows.parallel.showall')}</span>`,
+      `<span class="parallel-hide-all">${i18n.t('windows.parallel.hideall')}</span>`,
+      '</div>'
+    ];
+  }
+
+  createSectionTitleRow(sectionTitle, colspan) {
+    return `<tr><th class="section-title" colspan="${colspan}">${this.escapeHtml(sectionTitle)}</th></tr>`;
+  }
+
+  createPassageCells(row, style) {
+    const cells = [];
+    const books = row.books ?? this.state.currentParallelData.books;
+    const lang = convertLang(this.state.currentTextInfo.lang);
+
+    for (let j = 0, jl = row.passages.length; j < jl; j++) {
+      const passage = row.passages[j];
+
+      if (passage === null) {
+        cells.push(`<td class="parallel-passage" ${style}>-</td>`);
+      } else {
+        const bookName = BOOK_DATA[books[j]].names[this.state.currentTextInfo.lang][0];
+        cells.push(`<td class="parallel-passage" ${style} lang="${lang}">${this.escapeHtml(bookName)} ${this.escapeHtml(passage)}</td>`);
+      }
+    }
+
+    return cells;
+  }
+
+  createTextCells(row) {
+    const cells = [];
+    const books = row.books ?? this.state.currentParallelData.books;
+    const lang = convertLang(this.state.currentTextInfo.lang);
+
+    for (let j = 0, jl = row.passages.length; j < jl; j++) {
+      const passage = row.passages[j];
+
+      if (passage === null) {
+        cells.push('<td></td>');
+      } else {
+        cells.push(`<td class="reading-text" data-bookid="${books[j]}" data-passage="${passage}" lang="${lang}"></td>`);
+      }
+    }
+
+    return cells;
+  }
+
+  createInlineTitleRows(parallels, style) {
+    const rows = [];
+
+    for (let i = 0, il = parallels.length; i < il; i++) {
+      const row = parallels[i];
+
+      if (typeof row.sectionTitle !== 'undefined') {
+        rows.push(this.createSectionTitleRow(row.sectionTitle, this.state.currentParallelData.books.length + 1));
+      } else {
+        rows.push(`<tr class="parallel-entry-header"><th class="parallel-title" ${style}>${this.escapeHtml(row.title)}</th>`);
+        rows.push(...this.createPassageCells(row, style));
+        rows.push('</tr>');
+
+        rows.push('<tr class="parallel-entry-text parallel-entry-text-collapsed">');
+        rows.push('<th></th>');
+        rows.push(...this.createTextCells(row));
+        rows.push('</tr>');
+      }
+    }
+
+    return rows;
+  }
+
   createParallel() {
     const html = [];
-
-    html.push(`<h1>${this.escapeHtml(this.state.currentParallelData.title)}</h1>`);
-    html.push(`<p class="parallel-description">${this.escapeHtml(this.state.currentParallelData.description)}</p>`);
-
-    html.push('<div class="parallels-buttons">');
-    html.push(`<span class="parallel-show-all">${i18n.t('windows.parallel.showall')}</span>`);
-    html.push(`<span class="parallel-hide-all">${i18n.t('windows.parallel.hideall')}</span>`);
-    html.push('</div>');
-
     const dir = this.state.currentTextInfo?.dir ?? 'ltr';
+
+    html.push(...this.createParallelHeader(
+      this.state.currentParallelData.title,
+      this.state.currentParallelData.description
+    ));
+
     html.push(`<table dir="${dir}">`);
 
     if (this.columnFormat === 'inlinetitle') {
       const style = ` style="width: ${100 / (this.state.currentParallelData.books.length + 1)}%"`;
-
       html.push('<tbody>');
-      for (let i = 0, il = this.state.currentParallelData.parallels.length; i < il; i++) {
-        const row = this.state.currentParallelData.parallels[i];
-
-        if (typeof row.sectionTitle !== 'undefined') {
-          html.push(`<tr><th class="section-title" colspan="${this.state.currentParallelData.books.length + 1}">${this.escapeHtml(row.sectionTitle)}</th></tr>`);
-        } else {
-          html.push(`<tr class="parallel-entry-header"><th class="parallel-title" ${style}>${this.escapeHtml(row.title)}</th>`);
-
-          for (let j = 0, jl = row.passages.length; j < jl; j++) {
-            const passage = row.passages[j];
-
-            if (passage === null) {
-              html.push(`<td class="parallel-passage" ${style}>-</td>`);
-            } else {
-              const books = row.books ?? this.state.currentParallelData.books;
-              const lang = convertLang(this.state.currentTextInfo.lang);
-              const bookName = BOOK_DATA[books[j]].names[this.state.currentTextInfo.lang][0];
-
-              html.push(`<td class="parallel-passage" ${style} lang="${lang}">${this.escapeHtml(bookName)} ${this.escapeHtml(passage)}</td>`);
-            }
-          }
-
-          html.push('</tr>');
-
-          html.push('<tr class="parallel-entry-text parallel-entry-text-collapsed">');
-          html.push('<th></th>');
-
-          for (let j = 0, jl = row.passages.length; j < jl; j++) {
-            const passage = row.passages[j];
-
-            if (passage === null) {
-              html.push('<td></td>');
-            } else {
-              const books = row.books ?? this.state.currentParallelData.books;
-              const lang = convertLang(this.state.currentTextInfo.lang);
-
-              html.push(`<td class="reading-text" data-bookid="${books[j]}" data-passage="${passage}" lang="${lang}"></td>`);
-            }
-          }
-
-          html.push('</tr>');
-        }
-      }
+      html.push(...this.createInlineTitleRows(this.state.currentParallelData.parallels, style));
       html.push('</tbody>');
     }
 
@@ -344,6 +373,71 @@ export class ParallelsWindowComponent extends BaseWindow {
     }
   }
 
+  parseVerseRange(verseRange, sectionid) {
+    const fragmentids = [];
+
+    if (verseRange.length === 1) {
+      fragmentids.push(`${sectionid}_${verseRange[0].trim()}`);
+    } else if (verseRange.length === 2) {
+      const start = parseInt(verseRange[0], 10);
+      const end = parseInt(verseRange[1], 10);
+
+      for (let verse = start; verse <= end; verse++) {
+        fragmentids.push(`${sectionid}_${verse}`);
+      }
+    }
+
+    return fragmentids;
+  }
+
+  parsePassageReference(passage, bookid) {
+    const sectionid = bookid + passage.split(':')[0];
+    const verseParts = passage.split(':')[1];
+    const verseRanges = verseParts.split(',');
+    const fragmentids = [];
+
+    for (let i = 0, il = verseRanges.length; i < il; i++) {
+      const verseRange = verseRanges[i].split('-');
+      fragmentids.push(...this.parseVerseRange(verseRange, sectionid));
+    }
+
+    return { sectionid, fragmentids };
+  }
+
+  prepareContentElement(content) {
+    let contentEl;
+    if (typeof content === 'string') {
+      const temp = document.createElement('div');
+      temp.innerHTML = content;
+      contentEl = temp;
+    } else {
+      contentEl = toElement(content);
+    }
+
+    contentEl.querySelectorAll('.cf,.note').forEach(el => {
+      el.parentNode.removeChild(el);
+    });
+
+    return contentEl;
+  }
+
+  appendVerseNodes(cell, contentEl, fragmentids) {
+    cell.innerHTML = '';
+
+    for (let i = 0, il = fragmentids.length; i < il; i++) {
+      const fragmentid = fragmentids[i];
+      const verseNode = contentEl.querySelector(`.v[data-id="${fragmentid}"]`);
+
+      if (verseNode) {
+        const prevEl = verseNode.previousElementSibling;
+        if (prevEl?.classList.contains('v-num')) {
+          cell.appendChild(prevEl.cloneNode(true));
+        }
+        cell.appendChild(verseNode.cloneNode(true));
+      }
+    }
+  }
+
   async processCell(cell, callback) {
     closest(cell, 'tr')?.classList.remove('parallel-entry-text-collapsed');
 
@@ -355,64 +449,21 @@ export class ParallelsWindowComponent extends BaseWindow {
     const bookid = cell.getAttribute('data-bookid');
     const passage = cell.getAttribute('data-passage');
 
-    if (bookid && passage) {
-      const sectionid = bookid + passage.split(':')[0];
-      const verseParts = passage.split(':')[1];
-      const verseRanges = verseParts.split(',');
-      const fragmentids = [];
+    if (!bookid || !passage) {
+      callback?.();
+      return;
+    }
 
-      for (let i = 0, il = verseRanges.length; i < il; i++) {
-        const verseRange = verseRanges[i].split('-');
+    try {
+      const { sectionid, fragmentids } = this.parsePassageReference(passage, bookid);
+      const content = await loadSectionAsync(this.state.currentTextInfo, sectionid);
+      const contentEl = this.prepareContentElement(content);
 
-        if (verseRange.length === 1) {
-          fragmentids.push(`${sectionid}_${verseRange[0].trim()}`);
-        } else if (verseRange.length === 2) {
-          const start = parseInt(verseRange[0], 10);
-          const end = parseInt(verseRange[1], 10);
+      this.appendVerseNodes(cell, contentEl, fragmentids);
 
-          for (let verse = start; verse <= end; verse++) {
-            fragmentids.push(`${sectionid}_${verse}`);
-          }
-        }
-      }
-
-      try {
-        const content = await loadSectionAsync(this.state.currentTextInfo, sectionid);
-
-        let contentEl;
-        if (typeof content === 'string') {
-          const temp = document.createElement('div');
-          temp.innerHTML = content;
-          contentEl = temp;
-        } else {
-          contentEl = toElement(content);
-        }
-
-        contentEl.querySelectorAll('.cf,.note').forEach(el => {
-          el.parentNode.removeChild(el);
-        });
-
-        cell.innerHTML = '';
-
-        for (let i = 0, il = fragmentids.length; i < il; i++) {
-          const fragmentid = fragmentids[i];
-          const verseNode = contentEl.querySelector(`.v[data-id="${fragmentid}"]`);
-
-          if (verseNode) {
-            const prevEl = verseNode.previousElementSibling;
-            if (prevEl?.classList.contains('v-num')) {
-              cell.appendChild(prevEl.cloneNode(true));
-            }
-            cell.appendChild(verseNode.cloneNode(true));
-          }
-        }
-
-        cell.classList.add('parallel-text-loaded');
-        callback?.();
-      } catch (err) {
-        callback?.();
-      }
-    } else {
+      cell.classList.add('parallel-text-loaded');
+      callback?.();
+    } catch (err) {
       callback?.();
     }
   }

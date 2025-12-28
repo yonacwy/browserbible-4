@@ -4,14 +4,9 @@
  */
 
 import { on, closest } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 const hasTouch = 'ontouchend' in document;
 import { OT_BOOKS } from '../bible/BibleData.js';
-
-// Default config
-updateConfig({
-  enableLemmaMatchPlugin: true
-});
 
 /**
  * Create a lemma match plugin

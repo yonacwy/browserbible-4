@@ -4,18 +4,9 @@
  */
 
 import { createElements, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
 import { PlaceKeeper } from '../common/Navigation.js';
-
-// Default config
-updateConfig({
-  enableFontSizeSelector: true,
-  fontSizeMin: 14,
-  fontSizeMax: 28,
-  fontSizeStep: 2,
-  fontSizeDefault: 18
-});
 
 /**
  * Create font size setting controls

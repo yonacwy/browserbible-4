@@ -5,14 +5,9 @@
 
 import { createElements, on, closest, siblings, offset, deepMerge, toElement } from '../lib/helpers.esm.js';
 import { EventEmitterMixin } from '../common/EventEmitter.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
 import { MovableWindow } from '../ui/MovableWindow.js';
-
-// Default config
-updateConfig({
-  enableVisualFilters: true
-});
 
 /**
  * Convert hyphenated CSS property names to camelCase

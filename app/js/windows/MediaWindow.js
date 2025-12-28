@@ -227,7 +227,7 @@ export class MediaWindowComponent extends BaseWindow {
       let videoData = null;
       try {
         videoData = await JesusFilmMediaApi.getVideoData(this.state.currentLanguage, item.chapterNumber);
-      } catch (err) {}
+      } catch (err) { /* empty */ }
 
       this.refs.galleryContent.innerHTML = '';
       mediaEl = document.createElement('video');

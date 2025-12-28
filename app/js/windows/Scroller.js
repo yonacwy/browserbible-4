@@ -9,11 +9,74 @@ import { getConfig } from '../core/config.js';
 import { Reference } from '../bible/BibleReference.js';
 import { loadSection } from '../texts/TextLoader.js';
 
-/**
- * Create a scroller for text content
- * @param {HTMLElement} node - The container element
- * @returns {Object} Scroller API object
- */
+const SCROLL_THRESHOLDS = {
+  LOAD_MORE_MULTIPLIER: 2,
+  TRIM_TOP_MULTIPLIER: 15,
+  TRIM_BOTTOM_MULTIPLIER: 15,
+  MAX_SECTIONS: 50,
+  MIN_SECTIONS_FOR_TRIM: 4,
+  POSITION_TOLERANCE: -2
+};
+
+const SPEED_CHECK_INTERVAL = 100;
+const GLOBAL_EVENT_DELAY = 10;
+
+const TEXT_TYPES = {
+  BIBLE: 'bible',
+  COMMENTARY: 'commentary',
+  VIDEOBIBLE: 'videobible',
+  DEAFBIBLE: 'deafbible',
+  BOOK: 'book'
+};
+
+const getFragmentSelector = (textType) => {
+  switch (textType) {
+    case TEXT_TYPES.BIBLE:
+    case TEXT_TYPES.COMMENTARY:
+    case TEXT_TYPES.VIDEOBIBLE:
+    case TEXT_TYPES.DEAFBIBLE:
+      return '.verse, .v';
+    case TEXT_TYPES.BOOK:
+      return '.page';
+    default:
+      return '.verse, .v';
+  }
+};
+
+const isFirstFragmentVisible = (fragment, topOfContentArea) => {
+  return offset(fragment).top - topOfContentArea > SCROLL_THRESHOLDS.POSITION_TOLERANCE;
+};
+
+const createLocationInfo = (fragment, currentTextInfo, topOfContentArea) => {
+  const fragmentid = fragment.getAttribute('data-id');
+  const textType = currentTextInfo?.type?.toLowerCase() ?? TEXT_TYPES.BIBLE;
+  let label = '';
+  let labelLong = '';
+
+  if ([TEXT_TYPES.BIBLE, TEXT_TYPES.COMMENTARY, TEXT_TYPES.VIDEOBIBLE, TEXT_TYPES.DEAFBIBLE].includes(textType)) {
+    const bibleref = Reference(fragmentid);
+    if (bibleref && currentTextInfo) {
+      bibleref.language = currentTextInfo.lang;
+      label = bibleref.toString();
+      labelLong = `${label} (${currentTextInfo.abbr})`;
+    }
+  } else if (textType === TEXT_TYPES.BOOK && currentTextInfo) {
+    labelLong = label = `${currentTextInfo.name} ${fragmentid}`;
+  }
+
+  const closestSection = closest(fragment, '.section');
+  return {
+    fragmentid,
+    sectionid: fragment.classList.contains('section')
+      ? fragmentid
+      : (closestSection?.getAttribute('data-id') ?? ''),
+    offset: topOfContentArea - offset(fragment).top,
+    label,
+    labelLong,
+    textid: currentTextInfo?.id ?? ''
+  };
+};
+
 export function Scroller(node) {
   const nodeEl = toElement(node);
   const wrapper = nodeEl.querySelector('.scroller-text-wrapper');
@@ -34,7 +97,7 @@ export function Scroller(node) {
 
   const startGlobalTimeout = () => {
     if (globalTimeout == null) {
-      setTimeout(triggerGlobalEvent, 10);
+      setTimeout(triggerGlobalEvent, GLOBAL_EVENT_DELAY);
     }
   };
 
@@ -45,7 +108,7 @@ export function Scroller(node) {
         target: this,
         data: {
           messagetype: 'nav',
-          type: currentTextInfo.type ? currentTextInfo.type.toLowerCase() : 'bible',
+          type: currentTextInfo.type ? currentTextInfo.type.toLowerCase() : TEXT_TYPES.BIBLE,
           locationInfo
         }
       });
@@ -67,7 +130,7 @@ export function Scroller(node) {
 
   const startSpeedTest = () => {
     if (speedInterval == null) {
-      speedInterval = setInterval(checkSpeed, 100);
+      speedInterval = setInterval(checkSpeed, SPEED_CHECK_INTERVAL);
     }
   };
 
@@ -91,90 +154,41 @@ export function Scroller(node) {
     }
   };
 
-  const updateLocationInfo = () => {
-    const topOfContentArea = offset(nodeEl).top;
-    let fragmentSelector = currentTextInfo?.fragmentSelector ?? null;
-    let newLocationInfo = null;
+  const findFirstVisibleFragment = (fragments, topOfContentArea) => {
+    for (const fragment of fragments) {
+      let currentFragment = fragment;
 
-    if (!fragmentSelector || fragmentSelector === '') {
-      const textType = currentTextInfo?.type?.toLowerCase() ?? 'bible';
-      switch (textType) {
-        case 'videobible':
-        case 'deafbible':
-        case 'bible':
-        case 'commentary':
-          fragmentSelector = '.verse, .v';
-          break;
-        case 'book':
-          fragmentSelector = '.page';
-          break;
-        default:
-          fragmentSelector = '.verse, .v';
+      if (isFirstFragmentVisible(currentFragment, topOfContentArea)) {
+        const fragmentid = currentFragment.getAttribute('data-id');
+        const totalFragments = currentFragment.parentNode?.querySelectorAll(`.${fragmentid}`) ?? [];
+
+        if (totalFragments.length > 1) {
+          currentFragment = totalFragments[0];
+          if (!isFirstFragmentVisible(currentFragment, topOfContentArea)) {
+            continue;
+          }
+        }
+
+        return currentFragment;
       }
     }
+    return null;
+  };
+
+  const updateLocationInfo = () => {
+    const topOfContentArea = offset(nodeEl).top;
+    const fragmentSelector = currentTextInfo?.fragmentSelector ||
+      getFragmentSelector(currentTextInfo?.type?.toLowerCase());
 
     let fragments = nodeEl.querySelectorAll(fragmentSelector);
     if (fragments.length === 1) {
       fragments = nodeEl.querySelectorAll('.section');
     }
 
-    for (const fragment of fragments) {
-      let currentFragment = fragment;
-      let isFirstVisibleFragment = false;
-
-      if (offset(currentFragment).top - topOfContentArea > -2) {
-        isFirstVisibleFragment = true;
-        const fragmentid = currentFragment.getAttribute('data-id');
-        const totalFragments = currentFragment.parentNode?.querySelectorAll(`.${fragmentid}`) ?? [];
-
-        if (totalFragments.length > 1) {
-          currentFragment = totalFragments[0];
-          if (offset(currentFragment).top - topOfContentArea <= -2) {
-            isFirstVisibleFragment = false;
-          }
-        }
-      }
-
-      if (isFirstVisibleFragment) {
-        const fragmentid = currentFragment.getAttribute('data-id');
-        let label = '';
-        let labelLong = '';
-        const textType = currentTextInfo?.type?.toLowerCase() ?? 'bible';
-
-        switch (textType) {
-          case 'videobible':
-          case 'deafbible':
-          case 'bible':
-          case 'commentary': {
-            const bibleref = Reference(fragmentid);
-            if (bibleref && currentTextInfo) {
-              bibleref.language = currentTextInfo.lang;
-              label = bibleref.toString();
-              labelLong = `${label} (${currentTextInfo.abbr})`;
-            }
-            break;
-          }
-          case 'book':
-            if (currentTextInfo) {
-              labelLong = label = `${currentTextInfo.name} ${fragmentid}`;
-            }
-            break;
-        }
-
-        const closestSection = closest(currentFragment, '.section');
-        newLocationInfo = {
-          fragmentid: currentFragment.getAttribute('data-id'),
-          sectionid: currentFragment.classList.contains('section')
-            ? currentFragment.getAttribute('data-id')
-            : (closestSection?.getAttribute('data-id') ?? ''),
-          offset: topOfContentArea - offset(currentFragment).top,
-          label,
-          labelLong,
-          textid: currentTextInfo?.id ?? ''
-        };
-        break;
-      }
-    }
+    const firstVisibleFragment = findFirstVisibleFragment(fragments, topOfContentArea);
+    const newLocationInfo = firstVisibleFragment
+      ? createLocationInfo(firstVisibleFragment, currentTextInfo, topOfContentArea)
+      : null;
 
     if (newLocationInfo != null && (locationInfo == null || newLocationInfo.fragmentid !== locationInfo.fragmentid)) {
       ext.trigger('locationchange', { type: 'locationchange', target: this, data: newLocationInfo });
@@ -183,56 +197,117 @@ export function Scroller(node) {
     locationInfo = newLocationInfo;
   };
 
+  const shouldLoadNext = (belowBottom, nodeHeight, sections) => {
+    return belowBottom < nodeHeight * SCROLL_THRESHOLDS.LOAD_MORE_MULTIPLIER &&
+           sections.length < SCROLL_THRESHOLDS.MAX_SECTIONS;
+  };
+
+  const shouldLoadPrev = (aboveTop, nodeHeight, sections) => {
+    return aboveTop < nodeHeight * SCROLL_THRESHOLDS.LOAD_MORE_MULTIPLIER &&
+           sections.length < SCROLL_THRESHOLDS.MAX_SECTIONS;
+  };
+
+  const shouldTrimTop = (aboveTop, nodeHeight, sectionsCount) => {
+    return aboveTop > nodeHeight * SCROLL_THRESHOLDS.TRIM_TOP_MULTIPLIER &&
+           sectionsCount >= 2;
+  };
+
+  const shouldTrimBottom = (belowBottom, nodeHeight, sectionsCount) => {
+    return belowBottom > nodeHeight * SCROLL_THRESHOLDS.TRIM_BOTTOM_MULTIPLIER &&
+           sectionsCount > SCROLL_THRESHOLDS.MIN_SECTIONS_FOR_TRIM;
+  };
+
+  const trimTopSection = () => {
+    const secondSection = wrapper.querySelectorAll('.section')[1];
+    const firstNodeOfSecondSection = secondSection?.firstElementChild ?? null;
+    const firstNodeOffsetBefore = firstNodeOfSecondSection ? offset(firstNodeOfSecondSection).top : 0;
+
+    const firstSection = wrapper.querySelector('.section');
+    if (firstSection) firstSection.parentNode.removeChild(firstSection);
+
+    const firstNodeOffsetAfter = firstNodeOfSecondSection ? offset(firstNodeOfSecondSection).top : 0;
+    const offsetDifference = firstNodeOffsetAfter - firstNodeOffsetBefore;
+    nodeEl.scrollTop -= Math.abs(offsetDifference);
+  };
+
+  const trimBottomSection = () => {
+    const lastSection = wrapper.querySelector('.section:last-child');
+    if (lastSection) lastSection.parentNode.removeChild(lastSection);
+  };
+
   const loadMore = () => {
-    if (!wrapper) return;
+    if (!wrapper || speedDelta !== 0) return;
 
     const wrapperHeight = wrapper.offsetHeight;
     const nodeHeight = nodeEl.offsetHeight;
     const nodeScrolltop = nodeEl.scrollTop;
-    const aboveTop = nodeScrolltop;
     const sections = wrapper.querySelectorAll('.section');
     const sectionsCount = sections.length;
+
+    const aboveTop = nodeScrolltop;
     const belowBottom = wrapperHeight - nodeHeight - nodeScrolltop;
 
-    if (speedDelta === 0) {
-      if (belowBottom < nodeHeight * 2) {
-        const lastSection = sections[sections.length - 1];
-        const fragmentid = lastSection?.getAttribute('data-nextid') ?? null;
+    if (shouldLoadNext(belowBottom, nodeHeight, sections)) {
+      const lastSection = sections[sections.length - 1];
+      const fragmentid = lastSection?.getAttribute('data-nextid');
+      if (fragmentid && fragmentid !== 'null') {
+        load('next', fragmentid);
+      }
+    } else if (shouldLoadPrev(aboveTop, nodeHeight, sections)) {
+      const firstSection = sections[0];
+      const fragmentid = firstSection?.getAttribute('data-previd');
+      if (fragmentid && fragmentid !== 'null') {
+        load('prev', fragmentid);
+      }
+    } else if (shouldTrimTop(aboveTop, nodeHeight, sectionsCount)) {
+      trimTopSection();
+    } else if (shouldTrimBottom(belowBottom, nodeHeight, sectionsCount)) {
+      trimBottomSection();
+    }
+  };
 
-        if (fragmentid != null && fragmentid !== 'null' && sections.length < 50) {
-          load('next', fragmentid);
+  const isAlreadyLoaded = (sectionid, fragmentid) => {
+    if (wrapper.querySelector(`.${sectionid}`)) {
+      if (fragmentid?.trim() && wrapper.querySelector(`.${fragmentid}`)) {
+        scrollTo(fragmentid);
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const insertContent = (loadType, content, nodeScrolltopBefore, wrapperHeightBefore) => {
+    const contentEl = typeof content === 'string' ? null : toElement(content);
+
+    switch (loadType) {
+      case 'text':
+        wrapper.innerHTML = '';
+        nodeEl.scrollTop = 0;
+        if (typeof content === 'string') {
+          wrapper.innerHTML = content;
+        } else if (contentEl) {
+          wrapper.appendChild(contentEl);
         }
-      }
-      else if (aboveTop < nodeHeight * 2) {
-        const firstSection = sections[0];
-        const fragmentid = firstSection?.getAttribute('data-previd') ?? null;
+        break;
 
-        if (fragmentid != null && fragmentid !== 'null' && sections.length < 50) {
-          load('prev', fragmentid);
+      case 'next':
+        if (typeof content === 'string') {
+          wrapper.insertAdjacentHTML('beforeend', content);
+        } else if (contentEl) {
+          wrapper.appendChild(contentEl);
         }
-      }
-      else if (aboveTop > nodeHeight * 15) {
-        if (wrapper.children.length >= 2) {
-          const secondSection = wrapper.querySelectorAll('.section')[1];
-          const firstNodeOfSecondSection = secondSection?.firstElementChild ?? null;
-          const firstNodeOffsetBefore = firstNodeOfSecondSection ? offset(firstNodeOfSecondSection).top : 0;
+        break;
 
-          const firstSection = wrapper.querySelector('.section');
-          if (firstSection) firstSection.parentNode.removeChild(firstSection);
-
-          // Maintain scroll position after removal
-          const firstNodeOffsetAfter = firstNodeOfSecondSection ? offset(firstNodeOfSecondSection).top : 0;
-          const offsetDifference = firstNodeOffsetAfter - firstNodeOffsetBefore;
-          const newScrolltop = nodeEl.scrollTop;
-          const updatedScrolltop = newScrolltop - Math.abs(offsetDifference);
-
-          nodeEl.scrollTop = updatedScrolltop;
+      case 'prev':
+        if (typeof content === 'string') {
+          wrapper.insertAdjacentHTML('afterbegin', content);
+        } else if (contentEl) {
+          wrapper.insertBefore(contentEl, wrapper.firstChild);
         }
-      }
-      else if (sectionsCount > 4 && belowBottom > nodeHeight * 15) {
-        const lastSection = wrapper.querySelector('.section:last-child');
-        if (lastSection) lastSection.parentNode.removeChild(lastSection);
-      }
+        const wrapperHeightAfter = wrapper.offsetHeight;
+        const heightDifference = wrapperHeightAfter - wrapperHeightBefore;
+        nodeEl.scrollTop = nodeScrolltopBefore + heightDifference;
+        break;
     }
   };
 
@@ -240,78 +315,26 @@ export function Scroller(node) {
     if (sectionid === 'null' || sectionid === null || sectionid === '') return;
     if (!wrapper) return;
 
-    // Check if already loaded
-    if (wrapper.querySelector(`.${sectionid}`)) {
-      if (fragmentid?.trim() !== '' && wrapper.querySelector(`.${fragmentid}`)) {
-        scrollTo(fragmentid);
-      }
-      return;
-    }
+    if (isAlreadyLoaded(sectionid, fragmentid)) return;
 
     if (loadType === 'text') {
       wrapper.innerHTML = `<div class="loading-indicator" style="height:${nodeEl.offsetHeight}px;"></div>`;
       nodeEl.scrollTop = 0;
     }
 
-    loadSection(currentTextInfo, sectionid, (content) => {
-      if (!wrapper) return;
+    const nodeScrolltopBefore = nodeEl.scrollTop;
+    const wrapperHeightBefore = wrapper.offsetHeight;
 
-      if (wrapper.querySelector(`.${sectionid}`)) {
-        if (fragmentid?.trim() !== '' && wrapper.querySelector(`.${fragmentid}`)) {
-          scrollTo(fragmentid);
-        }
-        return;
-      }
+    loadSection(currentTextInfo, sectionid, (content) => {
+      if (!wrapper || isAlreadyLoaded(sectionid, fragmentid)) return;
 
       ignoreScrollEvent = true;
+      insertContent(loadType, content, nodeScrolltopBefore, wrapperHeightBefore);
 
-      switch (loadType) {
-        default:
-        case 'text':
-          wrapper.innerHTML = '';
-          nodeEl.scrollTop = 0;
-
-          if (typeof content === 'string') {
-            wrapper.innerHTML = content;
-          } else {
-            const contentEl = toElement(content);
-            if (contentEl) wrapper.appendChild(contentEl);
-          }
-
-          if (fragmentid) {
-            scrollTo(fragmentid);
-          }
-
-          locationInfo = null;
-          updateLocationInfo();
-          break;
-
-        case 'next':
-          if (typeof content === 'string') {
-            wrapper.insertAdjacentHTML('beforeend', content);
-          } else {
-            const contentEl = toElement(content);
-            if (contentEl) wrapper.appendChild(contentEl);
-          }
-          break;
-
-        case 'prev': {
-          const nodeScrolltopBefore = nodeEl.scrollTop;
-          const wrapperHeightBefore = wrapper.offsetHeight;
-
-          if (typeof content === 'string') {
-            wrapper.insertAdjacentHTML('afterbegin', content);
-          } else {
-            const contentEl = toElement(content);
-            if (contentEl) wrapper.insertBefore(contentEl, wrapper.firstChild);
-          }
-
-          // Maintain scroll position after prepending content
-          const wrapperHeightAfter = wrapper.offsetHeight;
-          const heightDifference = wrapperHeightAfter - wrapperHeightBefore;
-          nodeEl.scrollTop = nodeScrolltopBefore + heightDifference;
-          break;
-        }
+      if (loadType === 'text' && fragmentid) {
+        scrollTo(fragmentid);
+        locationInfo = null;
+        updateLocationInfo();
       }
 
       ignoreScrollEvent = false;
@@ -322,8 +345,8 @@ export function Scroller(node) {
           target: this,
           data: {
             messagetype: 'textload',
-            texttype: currentTextInfo.type?.toLowerCase() ?? 'bible',
-            type: currentTextInfo.type?.toLowerCase() ?? 'bible',
+            texttype: currentTextInfo.type?.toLowerCase() ?? TEXT_TYPES.BIBLE,
+            type: currentTextInfo.type?.toLowerCase() ?? TEXT_TYPES.BIBLE,
             textid: currentTextInfo.id,
             abbr: currentTextInfo.abbr,
             sectionid,
@@ -386,9 +409,6 @@ export function Scroller(node) {
 
   const getLocationInfo = () => locationInfo;
 
-  const setFocus = () => {
-  };
-
   const close = () => {
     nodeEl.removeEventListener('scroll', handleScroll, false);
     stopSpeedTest();
@@ -405,8 +425,34 @@ export function Scroller(node) {
     ext.clearListeners();
   };
 
+  const broadcastCurrentContent = () => {
+    // Re-broadcast current content for newly created windows (e.g., MapWindow)
+    if (!wrapper || !currentTextInfo || !locationInfo?.sectionid) {
+      return;
+    }
+
+    const content = wrapper.innerHTML;
+    if (!content || content.trim() === '') {
+      return;
+    }
+
+    ext.trigger('globalmessage', {
+      type: 'globalmessage',
+      target: this,
+      data: {
+        messagetype: 'textload',
+        texttype: currentTextInfo.type?.toLowerCase() ?? TEXT_TYPES.BIBLE,
+        type: currentTextInfo.type?.toLowerCase() ?? TEXT_TYPES.BIBLE,
+        textid: currentTextInfo.id,
+        abbr: currentTextInfo.abbr,
+        sectionid: locationInfo.sectionid,
+        fragmentid: locationInfo.fragmentid,
+        content
+      }
+    });
+  };
+
   let ext = {
-    load_more: loadMore,
     loadMore,
     load,
     size,
@@ -414,8 +460,8 @@ export function Scroller(node) {
     setTextInfo,
     getLocationInfo,
     scrollTo,
-    setFocus,
-    close
+    close,
+    broadcastCurrentContent
   };
 
   ext = deepMerge(ext, EventEmitterMixin);

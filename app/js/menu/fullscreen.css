@@ -13,7 +13,6 @@
 	right: 60px;
 }
 
-
-	.compact-ui #main-fullscreen-button {
-		display: none;
-	}
+.compact-ui #main-fullscreen-button {
+	display: none;
+}

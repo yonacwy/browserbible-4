@@ -397,7 +397,9 @@ export class StatisticsWindowComponent extends BaseWindow {
       const data = await response.json();
       data.word_info = word_info;
       this.state.lemmaData.push(data);
-    } catch (err) {}
+    } catch {
+      // Ignore errors loading lexicon entries
+    }
 
     this.state.currentLemmaIndex++;
     await this.getNextLemma();

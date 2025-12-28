@@ -3,14 +3,7 @@
  */
 
 import { TextWindowComponent, registerWindowComponent } from './TextWindow.js';
-import { on, closest, siblings, toElement } from '../lib/helpers.esm.js';
-import { updateConfig } from '../core/config.js';
-
-updateConfig({
-  enableDeafBibleWindow: true,
-  deafBibleWindowDefaultBibleFragmentid: 'JN1_1',
-  deafBibleWindowDefaultBibleVersion: 'deaf_ASESLV'
-});
+import { on, closest, siblings } from '../lib/helpers.esm.js';
 
 /**
  * DeafBibleWindow Web Component

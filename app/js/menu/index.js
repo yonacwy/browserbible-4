@@ -4,8 +4,6 @@
  */
 
 import { registerMenuComponent } from '../core/registry.js';
-
-// Import converted modules
 import { MainMenuButton } from './MainMenuButton.js';
 import { MainSearchBox } from './MainSearchBox.js';
 import { AddWindowButton } from './AddWindowButton.js';

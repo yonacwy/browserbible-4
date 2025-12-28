@@ -4,14 +4,9 @@
  */
 
 import { createElements, extend, insertAfter, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { getWindowType } from '../core/registry.js';
 import { getApp } from '../core/registry.js';
-
-// Default config
-updateConfig({
-  enableUrlCopier: true
-});
 
 /**
  * Create URL copier component

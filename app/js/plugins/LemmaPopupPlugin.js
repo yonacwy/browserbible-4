@@ -4,17 +4,12 @@
  */
 
 import { on, closest, toElement } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { getApp } from '../core/registry.js';
 import { i18n } from '../lib/i18n.js';
 import { InfoWindow } from '../ui/InfoWindow.js';
 import { NT_BOOKS, OT_BOOKS, AP_BOOKS } from '../bible/BibleData.js';
 import { morphology } from '../bible/Morphology.js';
-
-// Default config
-updateConfig({
-  enableLemmaPopupPlugin: true
-});
 
 /**
  * Create a lemma popup plugin

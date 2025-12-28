@@ -36,7 +36,9 @@ export const AsyncHelpers = {
    * @param {number} ms - Milliseconds to wait
    * @returns {Promise} Promise that resolves after timeout
    */
-  sleep: (ms) => new Promise(resolve => setTimeout(resolve, ms))
+  sleep: (ms) => new Promise(resolve => {
+    setTimeout(resolve, ms);
+  })
 };
 
 export class BaseWindow extends HTMLElement {

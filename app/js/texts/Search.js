@@ -177,13 +177,11 @@ export class SearchIndexLoader {
         return response.json();
       })
       .then(data => {
-        console.log('Loaded Stems!', this.textInfo.id);
         this.stemmingData = data;
         this.loadNextIndex();
       })
       .catch(() => {
         this.stemmingData = null;
-        console.log('No stem data for', this.textInfo.id);
         this.loadNextIndex();
       });
   }

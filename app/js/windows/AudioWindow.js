@@ -4,7 +4,6 @@
 
 import { BaseWindow, AsyncHelpers, registerWindowComponent } from './BaseWindow.js';
 import { toElement, deepMerge } from '../lib/helpers.esm.js';
-import { updateConfig } from '../core/config.js';
 import { EventEmitterMixin } from '../common/EventEmitter.js';
 import { Reference } from '../bible/BibleReference.js';
 import { AudioController } from './AudioController.js';
@@ -15,11 +14,6 @@ import { getText } from '../texts/TextLoader.js';
 const hasTouch = 'ontouchend' in document;
 
 const getTextAsync = (textId) => AsyncHelpers.promisify(getText, textId);
-updateConfig({
-  enableAudioWindow: true,
-  audioWindowDefaultBibleFragmentid: 'JN1_1',
-  audioWindowDefaultBibleVersion: 'ENGESV'
-});
 
 /**
  * AudioWindow Web Component

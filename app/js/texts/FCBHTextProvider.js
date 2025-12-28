@@ -7,16 +7,10 @@
  * support CORS directly.
  */
 
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { processTexts } from './TextLoader.js';
 import { SearchTools } from './Search.js';
 import { BOOK_DATA, DEFAULT_BIBLE, DEFAULT_BIBLE_OSIS, OT_BOOKS } from '../bible/BibleData.js';
-
-updateConfig({
-  fcbhKey: '',
-  fcbhTextExclusions: [],
-  fcbhApiUrl: 'https://dbt.io'
-});
 
 const providerName = 'fcbh';
 const fullName = 'Faith Comes by Hearing - Digital Bible Platform';

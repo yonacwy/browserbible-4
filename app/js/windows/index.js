@@ -4,7 +4,7 @@
  */
 
 import { registerWindowType } from '../core/registry.js';
-import { mixinEventEmitter } from '../common/EventEmitter.js';
+
 import { getConfig } from '../core/config.js';
 
 // Import BaseWindow for web components

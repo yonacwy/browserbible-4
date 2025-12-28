@@ -4,7 +4,7 @@
  */
 
 import { on, closest, deepMerge, toElement } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { InfoWindow } from '../ui/InfoWindow.js';
 const hasTouch = 'ontouchend' in document;
 import { EventEmitterMixin } from '../common/EventEmitter.js';
@@ -13,11 +13,6 @@ import {
   getBibleRefMouseoverHandler,
   getBibleRefMouseoutHandler
 } from './CrossReferencePopupPlugin.js';
-
-// Default config
-updateConfig({
-  enableNotesPopupPlugin: true
-});
 
 /**
  * Create a notes popup plugin

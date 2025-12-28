@@ -4,21 +4,11 @@
  */
 
 import { createElements, on, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
 import { PlaceKeeper } from '../common/Navigation.js';
 
-// Default config
-updateConfig({
-  enableFontFamilySelector: true,
-  fontFamilyStacks: {
-    'Cambria': 'Cambria, Georgia, serif',
-    'Palatino': 'Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif',
-    'Libertine': 'Libertine',
-    'Helvetica': '"Helvetica Neue", Helvetica, Arial, sans-serif',
-    'Trebuchet': '"Trebuchet MS", "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Tahoma, sans-serif'
-  }
-});
+const toSlug = (str) => str.replace(/\s+/g, '-').toLowerCase();
 
 /**
  * Create font family setting controls
@@ -40,17 +30,18 @@ export function FontFamilySettings(_parentNode, _menu) {
 
   for (const fontStackName of fontFamilyStackNames) {
     const fontStackValue = fontFamilyStacks[fontStackName];
+    const fontSlug = toSlug(fontStackName);
 
     fontSettingHtml +=
-      `<label id="config-font-family-${fontStackName}" class="config-font-family" title="${fontStackName}">` +
-        `<input type="radio" id="config-font-family-${fontStackName}-value" name="config-font-family" value="${fontStackName}" />` +
+      `<label id="config-font-family-${fontSlug}" class="config-font-family" title="${fontStackName}">` +
+        `<input type="radio" id="config-font-family-${fontSlug}-value" name="config-font-family" value="${fontStackName}" />` +
         'Aa' +
       '</label>';
 
     fontFamilyStyle +=
-      `#config-font-family-${fontStackName}, ` +
-      `.config-font-family-${fontStackName} .reading-text,` +
-      `.config-font-family-${fontStackName} #font-size-table {` +
+      `#config-font-family-${fontSlug}, ` +
+      `.config-font-family-${fontSlug} .reading-text,` +
+      `.config-font-family-${fontSlug} #font-size-table {` +
       `  font-family: ${fontStackValue};` +
       '}';
   }
@@ -64,11 +55,11 @@ export function FontFamilySettings(_parentNode, _menu) {
 
     // remove all others
     for (const fontStackName of fontFamilyStackNames) {
-      const className = `config-font-family-${fontStackName}`;
+      const className = `config-font-family-${toSlug(fontStackName)}`;
       document.body.classList.remove(className);
     }
 
-    document.body.classList.add(`config-font-family-${newFontStackName}`);
+    document.body.classList.add(`config-font-family-${toSlug(newFontStackName)}`);
 
     AppSettings.setValue(fontFamilyKey, { fontName: newFontStackName });
 
@@ -91,7 +82,7 @@ export function FontFamilySettings(_parentNode, _menu) {
   }
 
   // set default
-  const defaultRadio = body ? qs(`#config-font-family-${fontFamilySetting.fontName}-value`, body) : null;
+  const defaultRadio = body ? qs(`#config-font-family-${toSlug(fontFamilySetting.fontName)}-value`, body) : null;
   defaultRadio?.click();
 }
 

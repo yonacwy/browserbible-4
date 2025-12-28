@@ -4,15 +4,9 @@
  */
 
 import { createElements, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { i18n } from '../lib/i18n.js';
 import { getAllResources } from '../core/registry.js';
-
-// Default config
-updateConfig({
-  enableLanguageSelector: true,
-  languageSelectorFallbackLang: 'en'
-});
 
 /**
  * Create language setting controls

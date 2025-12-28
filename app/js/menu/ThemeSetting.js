@@ -4,13 +4,8 @@
  */
 
 import { createElements, on, siblings, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
-
-// Default config
-updateConfig({
-  enableThemeSelector: true
-});
 
 /**
  * Create theme setting controls

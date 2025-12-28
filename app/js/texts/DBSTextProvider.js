@@ -3,18 +3,10 @@
  * Loads Bible texts from Digital Bible Society API
  */
 
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import { processTexts } from './TextLoader.js';
 import { SearchTools } from './Search.js';
 import { BOOK_DATA, DEFAULT_BIBLE, DEFAULT_BIBLE_USFM, APOCRYPHAL_BIBLE, APOCRYPHAL_BIBLE_USFM } from '../bible/BibleData.js';
-
-updateConfig({
-  dbsEnabled: true,
-  dbsKey: '',
-  dbsBase: 'https://api.dbp4.org/',
-  dbsIncludeList: [],
-  dbsExcludeList: []
-});
 
 const providerName = 'dbs';
 const fullName = 'Digital Bible Society';

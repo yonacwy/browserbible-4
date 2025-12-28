@@ -9,12 +9,39 @@ import { registerResource } from '../core/registry.js';
 import en from './en.esm.js';
 registerResource('en', en);
 
-// Note: Additional languages will be registered here as they are converted
-// For now, we'll create stub imports that will be populated later
+// Top 12 languages by total speakers
+import zhCN from './zh-CN.esm.js';
+registerResource('zh-CN', zhCN);
 
-// Example of how other languages will be imported:
-// import fr from './fr.esm.js';
-// registerResource('fr', fr);
-// import de from './de.esm.js';
-// registerResource('de', de);
-// etc.
+import hi from './hi.esm.js';
+registerResource('hi', hi);
+
+import es from './es.esm.js';
+registerResource('es', es);
+
+import fr from './fr.esm.js';
+registerResource('fr', fr);
+
+import ar from './ar.esm.js';
+registerResource('ar', ar);
+
+import bn from './bn.esm.js';
+registerResource('bn', bn);
+
+import pt from './pt.esm.js';
+registerResource('pt', pt);
+
+import ru from './ru.esm.js';
+registerResource('ru', ru);
+
+import ur from './ur.esm.js';
+registerResource('ur', ur);
+
+import id from './id.esm.js';
+registerResource('id', id);
+
+import de from './de.esm.js';
+registerResource('de', de);
+
+import ja from './ja.esm.js';
+registerResource('ja', ja);

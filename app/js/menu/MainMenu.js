@@ -28,8 +28,15 @@ export class MainMenu {
 
     for (const [name, ComponentClass] of allComponents) {
       try {
-        const component = new ComponentClass(this.menuContainer, this);
-        this.components.push(component);
+        // Support both class constructors and factory functions
+        const isClass = ComponentClass.prototype && ComponentClass.prototype.constructor === ComponentClass;
+        const component = isClass
+          ? new ComponentClass(this.menuContainer, this)
+          : ComponentClass(this.menuContainer, this);
+
+        if (component) {
+          this.components.push(component);
+        }
       } catch (error) {
         console.error(`Failed to initialize menu component "${name}":`, error);
       }

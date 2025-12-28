@@ -3,7 +3,7 @@
  */
 
 import { BaseWindow, AsyncHelpers, registerWindowComponent } from './BaseWindow.js';
-import { offset, on, closest, toElement } from '../lib/helpers.esm.js';
+import { offset, on, closest } from '../lib/helpers.esm.js';
 import { getConfig } from '../core/config.js';
 import { getApp } from '../core/registry.js';
 import { i18n } from '../lib/i18n.js';
@@ -478,73 +478,87 @@ export class SearchWindowComponent extends BaseWindow {
     this.refs.footer.innerHTML = i18n.t('windows.search.results') + e.data.searchIndexesData.length;
   }
 
+  determineBookList(isLemmaSearch) {
+    if (isLemmaSearch) {
+      const text = this.refs.input.value;
+      if (text.substr(0, 1) === 'G') {
+        return NT_BOOKS;
+      } else if (text.substr(0, 1) === 'H') {
+        return OT_BOOKS;
+      }
+    }
+    return this.state.textInfo.divisions;
+  }
+
+  initializeDivisionCount(bookList) {
+    const divisionCount = {};
+    for (let i = 0, il = bookList.length; i < il; i++) {
+      divisionCount[bookList[i]] = 0;
+    }
+    return divisionCount;
+  }
+
+  formatResultLabel(fragmentid) {
+    if (this.state.textInfo.type.toLowerCase() === 'bible') {
+      const br = Reference(fragmentid);
+      if (br && BOOK_DATA['GN'].names[this.state.textInfo.lang]) {
+        br.language = this.state.textInfo.lang;
+      }
+      return br ? br.toString() : fragmentid;
+    }
+    return fragmentid;
+  }
+
+  buildResultsHtml(results, divisionCount) {
+    let html = '<table>';
+    const langCode = this.state.textInfo.lang ?? 'en';
+
+    for (let i = 0, il = results.length; i < il; i++) {
+      const result = results[i];
+      const fragmentid = result.fragmentid;
+      const dbsBookCode = fragmentid.substr(0, 2);
+
+      divisionCount[dbsBookCode]++;
+
+      const label = this.formatResultLabel(fragmentid);
+      html += `<tr data-fragmentid="${fragmentid}" class="divisionid-${fragmentid.substr(0, 2)}"><th>${label}</th><td lang="${langCode}">${result.html}</td></tr>`;
+    }
+
+    html += '</table>';
+    return html;
+  }
+
+  renderSearchResultsContent(results) {
+    const bookList = this.determineBookList(this.state.isLemmaSearch);
+    const divisionCount = this.initializeDivisionCount(bookList);
+    const html = this.buildResultsHtml(results, divisionCount);
+
+    this.refs.resultsBlock.innerHTML = html;
+    this.refs.resultsBlock.querySelectorAll('.v-num').forEach((el) => {
+      el.parentNode.removeChild(el);
+    });
+
+    this.renderResultsVisual(divisionCount, bookList);
+
+    if (this.state.isLemmaSearch) {
+      this.renderLemmaInfo();
+      this.renderUsage();
+    }
+
+    this.createHighlights();
+  }
+
   searchCompleteHandler(e) {
     this.state.currentResults = e.data.results;
     this.state.searchTermsRegExp = e.data.searchTermsRegExp;
     this.state.isLemmaSearch = e.data.isLemmaSearch;
 
-    const results = e.data.results;
-    let html = '<table>';
-
     this.refs.searchProgressBarInner.style.width = '100%';
     this.setFinalResultsCount(e.data.results?.length ?? 0);
     this.refs.resultsBlock.classList.remove('loading-indicator');
 
-    if (results?.length > 0) {
-      const divisionCount = {};
-      let bookList = null;
-
-      if (this.state.isLemmaSearch) {
-        const text = this.refs.input.value;
-        if (text.substr(0, 1) === 'G') {
-          bookList = NT_BOOKS;
-        } else if (text.substr(0, 1) === 'H') {
-          bookList = OT_BOOKS;
-        }
-      } else {
-        bookList = this.state.textInfo.divisions;
-      }
-
-      for (let i = 0, il = bookList.length; i < il; i++) {
-        divisionCount[bookList[i]] = 0;
-      }
-
-      for (let i = 0, il = results.length; i < il; i++) {
-        const result = results[i];
-        const fragmentid = result.fragmentid;
-        const dbsBookCode = fragmentid.substr(0, 2);
-        let label = '';
-
-        divisionCount[dbsBookCode]++;
-
-        if (this.state.textInfo.type.toLowerCase() === 'bible') {
-          const br = Reference(result.fragmentid);
-          if (br && BOOK_DATA['GN'].names[this.state.textInfo.lang]) {
-            br.language = this.state.textInfo.lang;
-          }
-          label = br ? br.toString() : result.fragmentid;
-        } else {
-          label = result.fragmentid;
-        }
-
-        const langCode = this.state.textInfo.lang ?? 'en';
-        html += `<tr data-fragmentid="${result.fragmentid}" class="divisionid-${result.fragmentid.substr(0, 2)}"><th>${label}</th><td lang="${langCode}">${result.html}</td></tr>`;
-      }
-      html += '</table>';
-
-      this.refs.resultsBlock.innerHTML = html;
-      this.refs.resultsBlock.querySelectorAll('.v-num').forEach((el) => {
-        el.parentNode.removeChild(el);
-      });
-
-      this.renderResultsVisual(divisionCount, bookList);
-
-      if (this.state.isLemmaSearch) {
-        this.renderLemmaInfo();
-        this.renderUsage();
-      }
-
-      this.createHighlights();
+    if (e.data.results?.length > 0) {
+      this.renderSearchResultsContent(e.data.results);
     } else {
       this.refs.resultsBlock.innerHTML = 'No results';
     }

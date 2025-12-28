@@ -51,8 +51,6 @@ class TextNavigationClass {
   }
 
   _handleBrowserNavigation(e) {
-    console.log('handleNavigation', e, e.state);
-
     if (e.state?.locationid !== undefined) {
       const newlocationid = e.state.locationid;
       let type = '';
@@ -71,8 +69,6 @@ class TextNavigationClass {
   }
 
   firstState(locationid) {
-    console.log('firststate', locationid);
-
     this.locations.push(locationid);
     this.locationIndex = 0;
 

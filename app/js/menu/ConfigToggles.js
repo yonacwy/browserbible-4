@@ -4,16 +4,9 @@
  */
 
 import { createElements, qs } from '../lib/helpers.esm.js';
-import { getConfig, updateConfig } from '../core/config.js';
+import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
 import { PlaceKeeper } from '../common/Navigation.js';
-
-// Default config
-updateConfig({
-  enableSettingToggles: true,
-  settingToggleNames: ['Chapters', 'Verses', 'Titles', 'Notes', 'Words of Christ', 'Media', 'Justify'],
-  settingToggleDefaults: [true, true, true, true, true, true, false]
-});
 
 /**
  * Create toggle settings controls
