@@ -34,24 +34,20 @@ export const DEMOTED_LOCATIONS = new Set([
   'Mahanaim?', 'Kiriath-jearim?'
 ]);
 
-// Zoom thresholds for icon visibility (6 tiers)
+// Zoom thresholds for icon visibility (4 tiers)
 export const ZOOM_THRESHOLDS = {
   1: 0,   // Tier 1 - Major locations (always visible)
-  2: 8,   // Tier 2 - Important locations
-  3: 24,  // Tier 3 - Notable locations
-  4: 48,  // Tier 4 - Moderate locations
-  5: 72,  // Tier 5 - Minor locations
-  6: 96   // Tier 6 - Minimal locations (visible at max zoom)
+  2: 16,  // Tier 2 - Important locations (visible at 16x zoom)
+  3: 40,  // Tier 3 - Notable locations (visible at 40x zoom)
+  4: 64   // Tier 4 - Minor locations (visible at 64x zoom)
 };
 
-// Icon sizes for each tier (in pixels)
+// Icon sizes for each tier (in pixels) - 1.5x base size for better visibility
 export const ICON_SIZES = {
-  1: 42,  // Tier 1 (Major locations)
-  2: 38,  // Tier 2 (Important locations)
-  3: 34,  // Tier 3 (Notable locations)
-  4: 30,  // Tier 4 (Moderate locations)
-  5: 26,  // Tier 5 (Minor locations)
-  6: 22   // Tier 6 (Minimal locations)
+  1: 42,  // Tier 1 (Major locations) - 1.5x28
+  2: 30,  // Tier 2 (Important locations) - 1.5x20
+  3: 24,  // Tier 3 (Notable locations) - 1.5x16
+  4: 18   // Tier 4 (Minor locations) - 1.5x12
 };
 
 // Collision detection settings

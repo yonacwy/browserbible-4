@@ -10,7 +10,6 @@ import { SVG_WIDTH, SVG_HEIGHT, COLLISION_DETECTION_ENABLED } from './constants.
 import { geoToSvg, svgToGeo } from './geo-utils.js';
 import * as MarkerRenderer from './marker-renderer.js';
 import { optimizeMarkerPositions, applyCollisionOffsets } from './collision-detection.js';
-import { TIER_COLORS } from './icon-library.js';
 
 export class MapWindowComponent extends BaseWindow {
   constructor() {
@@ -24,7 +23,7 @@ export class MapWindowComponent extends BaseWindow {
       currentSuggestions: [],
       showAllLocations: false,
       currentReference: null,
-      enabledTiers: new Set([1, 2, 3, 4, 5, 6]), // All tiers enabled by default
+      enabledTiers: new Set([1, 2, 3, 4]), // All tiers enabled by default
       enabledTypes: new Set(['building', 'city', 'desert', 'island', 'mountain', 'other', 'region', 'river', 'sea', 'spring', 'valley']) // All types enabled by default
     };
 
@@ -71,27 +70,19 @@ export class MapWindowComponent extends BaseWindow {
             <div class="division-list-items">
               <label class="division-name">
                 <input type="checkbox" class="map-tier-checkbox" data-tier="1" checked />
-                <span>Major (50+ verses)</span>
+                <span>Major (10+ verses)</span>
               </label>
               <label class="division-name">
                 <input type="checkbox" class="map-tier-checkbox" data-tier="2" checked />
-                <span>Important (20-49 verses)</span>
+                <span>Important (5-9 verses)</span>
               </label>
               <label class="division-name">
                 <input type="checkbox" class="map-tier-checkbox" data-tier="3" checked />
-                <span>Notable (10-19 verses)</span>
+                <span>Notable (3-4 verses)</span>
               </label>
               <label class="division-name">
                 <input type="checkbox" class="map-tier-checkbox" data-tier="4" checked />
-                <span>Moderate (5-9 verses)</span>
-              </label>
-              <label class="division-name">
-                <input type="checkbox" class="map-tier-checkbox" data-tier="5" checked />
-                <span>Minor (3-4 verses)</span>
-              </label>
-              <label class="division-name">
-                <input type="checkbox" class="map-tier-checkbox" data-tier="6" checked />
-                <span>Minimal (1-2 verses)</span>
+                <span>Minor (1-2 verses)</span>
               </label>
             </div>
           </div>
@@ -759,6 +750,8 @@ export class MapWindowComponent extends BaseWindow {
                 if (icon) {
                   icon.style.color = '#135C13'; // Green for highlighted locations
                   marker.classList.add('highlighted');
+                  marker.classList.remove('filtered-out');
+                  marker.style.display = ''; // Ensure highlighted markers are visible
                 }
               }
             });
@@ -788,8 +781,9 @@ export class MapWindowComponent extends BaseWindow {
       this.markersGroup.querySelectorAll('.map-marker.highlighted').forEach((marker) => {
         const icon = marker.querySelector('.map-marker-icon');
         if (icon) {
-          const tier = parseInt(marker.getAttribute('data-tier') || '6', 10);
-          icon.style.color = TIER_COLORS[tier] || TIER_COLORS[6];
+          const tier = parseInt(marker.getAttribute('data-tier') || '4', 10);
+          const originalColor = tier === 1 ? '#c41e3a' : tier === 2 ? '#d45a5a' : '#e08080';
+          icon.style.color = originalColor;
           marker.classList.remove('highlighted');
         }
       });

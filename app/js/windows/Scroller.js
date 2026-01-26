@@ -361,7 +361,7 @@ export function Scroller(node) {
   };
 
   const scrollTo = (fragmentid, scrollOffset) => {
-    if (typeof fragmentid === 'undefined' || !wrapper) return;
+    if (fragmentid == null || !wrapper) return;
 
     const fragment = wrapper.querySelector(`.${fragmentid}`);
 

@@ -13,20 +13,18 @@ import {
 } from './constants.js';
 
 /**
- * Calculate importance tier based on verse count (6 tiers)
+ * Calculate importance tier based on verse count (4 tiers)
  */
 export const getImportanceTier = (location) => {
   const verseCount = location.verses?.length || 0;
   const isImportant = IMPORTANT_LOCATIONS.has(location.name);
   const isDemoted = DEMOTED_LOCATIONS.has(location.name);
 
-  if (isDemoted) return 5;
-  if (verseCount >= 50 || isImportant) return 1;
-  if (verseCount >= 20) return 2;
-  if (verseCount >= 10) return 3;
-  if (verseCount >= 5) return 4;
-  if (verseCount >= 3) return 5;
-  return 6;
+  if (isDemoted) return 4;
+  if (verseCount >= 10 || isImportant) return 1;
+  if (verseCount >= 5) return 2;
+  if (verseCount >= 3) return 3;
+  return 4;
 };
 
 /**

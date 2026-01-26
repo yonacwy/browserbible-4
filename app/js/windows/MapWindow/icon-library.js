@@ -68,20 +68,10 @@ export const LOCATION_ICONS = {
           <path d="M12 2 C8.5 2, 5 4.5, 5 8.5 C5 13, 12 22, 12 22 S19 13, 19 8.5 C19 4.5, 15.5 2, 12 2z" stroke="currentColor" stroke-width="1.5" fill="none"/>`
 };
 
-// Tier-based colors (gradient from dark red to light pink for 6 tiers)
-export const TIER_COLORS = {
-  1: '#b01030', // Major - darkest red
-  2: '#c41e3a', // Important
-  3: '#d45a5a', // Notable
-  4: '#e07070', // Moderate
-  5: '#e89090', // Minor
-  6: '#f0b0b0'  // Minimal - lightest
-};
-
 /**
  * Create an SVG icon element for a location type
  * @param {string} type - Location type (city, mountain, etc.)
- * @param {number} tier - Importance tier (1-6)
+ * @param {number} tier - Importance tier (1-4)
  * @param {string} color - Icon color (defaults to tier-based color)
  * @returns {SVGElement} SVG icon element
  */
@@ -91,7 +81,7 @@ export function createLocationIcon(type, tier, color = null) {
 
   // Tier-based colors
   if (!color) {
-    color = TIER_COLORS[tier] || TIER_COLORS[6];
+    color = tier === 1 ? '#c41e3a' : tier === 2 ? '#d45a5a' : '#e08080';
   }
 
   // Create SVG element
