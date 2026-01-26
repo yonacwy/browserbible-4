@@ -1,0 +1,126 @@
+{
+  "name": "@browserbible/verse-detection",
+  "version": "1.0.0",
+  "description": "Bible verse reference detection plugin for Browser Bible 4. Detects and links verse references in text with multi-language support.",
+  "type": "module",
+  "main": "dist/verse-detection.js",
+  "module": "dist/verse-detection.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/verse-detection.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./popup": {
+      "types": "./dist/VersePopup.d.ts",
+      "import": "./dist/VersePopup.js"
+    },
+    "./book-names": {
+      "types": "./dist/bookNames.d.ts",
+      "import": "./dist/bookNames.js"
+    },
+    "./languages": {
+      "types": "./dist/languages/index.d.ts",
+      "import": "./dist/languages/index.js"
+    },
+    "./languages/types": {
+      "types": "./dist/languages/types.d.ts",
+      "import": "./dist/languages/types.js"
+    },
+    "./languages/en": {
+      "types": "./dist/languages/en.d.ts",
+      "import": "./dist/languages/en.js"
+    },
+    "./languages/es": {
+      "types": "./dist/languages/es.d.ts",
+      "import": "./dist/languages/es.js"
+    },
+    "./languages/pt": {
+      "types": "./dist/languages/pt.d.ts",
+      "import": "./dist/languages/pt.js"
+    },
+    "./languages/fr": {
+      "types": "./dist/languages/fr.d.ts",
+      "import": "./dist/languages/fr.js"
+    },
+    "./languages/de": {
+      "types": "./dist/languages/de.d.ts",
+      "import": "./dist/languages/de.js"
+    },
+    "./languages/ru": {
+      "types": "./dist/languages/ru.d.ts",
+      "import": "./dist/languages/ru.js"
+    },
+    "./languages/ar": {
+      "types": "./dist/languages/ar.d.ts",
+      "import": "./dist/languages/ar.js"
+    },
+    "./languages/hi": {
+      "types": "./dist/languages/hi.d.ts",
+      "import": "./dist/languages/hi.js"
+    },
+    "./languages/zh": {
+      "types": "./dist/languages/zh.d.ts",
+      "import": "./dist/languages/zh.js"
+    },
+    "./languages/id": {
+      "types": "./dist/languages/id.d.ts",
+      "import": "./dist/languages/id.js"
+    }
+  },
+  "files": [
+    "dist",
+    "*.ts",
+    "languages/*.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && tsc -p tsconfig.build.json",
+    "build:types": "tsc --emitDeclarationOnly",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint *.ts"
+  },
+  "keywords": [
+    "bible",
+    "verse",
+    "detection",
+    "regex",
+    "scripture",
+    "reference",
+    "parser",
+    "multi-language",
+    "browserbible"
+  ],
+  "author": "Digital Bible Society",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digitalbiblesociety/browserbible-4",
+    "directory": "verse-detection"
+  },
+  "bugs": {
+    "url": "https://github.com/digitalbiblesociety/browserbible-4/issues"
+  },
+  "homepage": "https://github.com/digitalbiblesociety/browserbible-4/tree/main/verse-detection#readme",
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "terser": "^5.46.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  },
+  "peerDependencies": {
+    "browserbible-4": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "browserbible-4": {
+      "optional": true
+    }
+  }
+}
