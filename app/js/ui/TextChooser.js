@@ -1,25 +1,37 @@
 /**
  * TextChooser
- * A dropdown for selecting Bible versions
- * Uses native popover API for click-off detection
+ * A high-performance dropdown for selecting Bible versions
+ * Uses virtual scrolling for 60fps smooth rendering
  */
 
-import { createElements, on, siblings, deepMerge, toElement, offset } from '../lib/helpers.esm.js';
+import { createElements, on, deepMerge, toElement, offset } from '../lib/helpers.esm.js';
 import { EventEmitterMixin } from '../common/EventEmitter.js';
 import AppSettings from '../common/AppSettings.js';
-const hasTouch = 'ontouchend' in document;
 import { loadTexts, getText } from '../texts/TextLoader.js';
 
+const hasTouch = 'ontouchend' in document;
+const ROW_HEIGHT = 32; // Fixed row height for virtual scrolling
+const BUFFER_ROWS = 5; // Extra rows to render above/below viewport
+
 /**
- * Create a text chooser
+ * Create a text chooser with virtual scrolling
  * @returns {Object} TextChooser API object
  */
 export function TextChooser() {
   let container = null;
-  let text_type = null;
+  let textType = null;
   let target = null;
   let selectedTextInfo = null;
-  let list_data = null;
+  let listData = null;
+
+  // Virtual scrolling state
+  let processedData = []; // Flat array of {type: 'header'|'text', data, searchText, langHeader}
+  let filteredIndices = []; // Indices into processedData that match filter
+  let scrollTop = 0;
+  let viewportHeight = 0;
+  let filterText = '';
+  let rafId = null;
+
   const recentlyUsedKey = 'texts-recently-used';
   let recentlyUsed = AppSettings.getValue(recentlyUsedKey, { recent: [] });
 
@@ -36,15 +48,23 @@ export function TextChooser() {
         '<input type="text" class="text-chooser-filter-text i18n" data-i18n="[placeholder]windows.bible.filter" />' +
         '<span class="close-button">Close</span>' +
       '</div>' +
-      '<div class="text-chooser-main"></div>' +
+      '<div class="text-chooser-main">' +
+        '<div class="text-chooser-scroll-content"></div>' +
+      '</div>' +
     '</div>'
   );
 
   const header = textChooser.querySelector('.text-chooser-header');
   const main = textChooser.querySelector('.text-chooser-main');
+  const scrollContent = textChooser.querySelector('.text-chooser-scroll-content');
   const listselector = textChooser.querySelector('.text-chooser-selector');
   const filter = textChooser.querySelector('.text-chooser-filter-text');
   const closeBtn = textChooser.querySelector('.close-button');
+
+  // Add CSS containment for performance
+  main.style.contain = 'strict';
+  main.style.overflowY = 'auto';
+  main.style.willChange = 'scroll-position';
 
   document.body.appendChild(textChooser);
 
@@ -55,84 +75,162 @@ export function TextChooser() {
     closeBtn.addEventListener('click', hide, false);
   }
 
-  // Handle popover toggle events (fires on light dismiss - click outside or Escape)
   textChooser.addEventListener('toggle', (e) => {
     if (e.newState === 'closed') {
       ext.trigger('offclick', { type: 'offclick' });
     }
   });
 
-  // Use single 'input' event - faster and more modern than keyup/keypress
-  filter.addEventListener('input', filterVersions, false);
+  filter.addEventListener('input', handleFilterInput, false);
   filter.addEventListener('keydown', handleFilterKeydown, false);
+  main.addEventListener('scroll', handleScroll, { passive: true });
 
   function handleFilterKeydown(e) {
     if (e.key === 'Enter' || e.keyCode === 13) {
-      const visibleRows = main.querySelectorAll('.text-chooser-row:not(.filtered-hidden)');
-      if (visibleRows.length === 1) {
-        visibleRows[0].click();
+      const visibleTextRows = filteredIndices.filter(i => processedData[i].type === 'text');
+      if (visibleTextRows.length === 1) {
+        const item = processedData[visibleTextRows[0]];
+        selectText(item.data.id);
         filter.value = '';
-        
+        filterText = '';
+        applyFilter();
       }
     }
   }
 
-  function filterVersions() {
-    const text = filter.value.toLowerCase().trim();
+  function handleFilterInput() {
+    const newFilter = filter.value.toLowerCase().trim();
+    if (newFilter === filterText) return;
 
-    if (text === '') {
-      const allRows = main.querySelectorAll('.text-chooser-row');
-      for (let i = 0; i < allRows.length; i++) {
-        allRows[i].classList.remove('filtered-hidden');
-      }
-      const allHeaders = main.querySelectorAll('.text-chooser-row-header');
-      for (let i = 0; i < allHeaders.length; i++) {
-        allHeaders[i].classList.remove('filtered-hidden');
-      }
-      return;
-    }
-
-    const allRows = main.querySelectorAll('.text-chooser-row');
-    const headerVisibility = new Map();
-
-    for (let i = 0; i < allRows.length; i++) {
-      const row = allRows[i];
-      const searchText = row.getAttribute('data-search-text') || '';
-
-      const hasMatch = searchText.indexOf(text) > -1;
-
-      if (hasMatch) {
-        row.classList.remove('filtered-hidden');
-        const langHeader = row.getAttribute('data-lang-header');
-        if (langHeader) {
-          headerVisibility.set(langHeader, true);
-        }
-      } else {
-        row.classList.add('filtered-hidden');
-      }
-    }
-
-    const allHeaders = main.querySelectorAll('.text-chooser-row-header');
-    for (let i = 0; i < allHeaders.length; i++) {
-      const header = allHeaders[i];
-      const langName = header.getAttribute('data-lang-name');
-      if (headerVisibility.get(langName)) {
-        header.classList.remove('filtered-hidden');
-      } else {
-        header.classList.add('filtered-hidden');
-      }
-    }
+    filterText = newFilter;
+    applyFilter();
   }
 
-  on(textChooser, 'click', '.text-chooser-row', function() {
-    const row = this;
-    const textid = row.getAttribute('data-id');
+  function applyFilter() {
+    if (filterText === '') {
+      filteredIndices = processedData.map((_, i) => i);
+    } else {
+      filteredIndices = buildFilteredIndices();
+    }
 
-    row.classList.add('selected');
-    siblings(row).forEach(function(sib) {
-      sib.classList.remove('selected');
+    updateScrollHeight();
+    scheduleRender();
+  }
+
+  function buildFilteredIndices() {
+    const matchingHeaders = new Set();
+    const matchingTextIndices = new Set();
+
+    // First pass: find matching texts and their headers
+    for (let i = 0; i < processedData.length; i++) {
+      const item = processedData[i];
+      if (item.type === 'text' && item.searchText.includes(filterText)) {
+        matchingTextIndices.add(i);
+        matchingHeaders.add(item.langHeader);
+      }
+    }
+
+    // Second pass: collect headers and texts in order
+    const result = [];
+    for (let i = 0; i < processedData.length; i++) {
+      const item = processedData[i];
+      const isMatchingHeader = item.type === 'header' && matchingHeaders.has(item.data);
+      const isMatchingText = item.type === 'text' && matchingTextIndices.has(i);
+
+      if (isMatchingHeader || isMatchingText) {
+        result.push(i);
+      }
+    }
+
+    return result;
+  }
+
+  function handleScroll() {
+    scrollTop = main.scrollTop;
+    scheduleRender();
+  }
+
+  function scheduleRender() {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      renderVisible();
     });
+  }
 
+  function updateScrollHeight() {
+    const totalHeight = filteredIndices.length * ROW_HEIGHT;
+    scrollContent.style.height = `${totalHeight}px`;
+  }
+
+  function renderVisible() {
+    if (!processedData.length) return;
+
+    viewportHeight = main.clientHeight;
+    const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
+    const endIndex = Math.min(
+      filteredIndices.length,
+      Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + BUFFER_ROWS
+    );
+
+    // Build HTML for visible rows
+    const fragment = document.createDocumentFragment();
+
+    for (let i = startIndex; i < endIndex; i++) {
+      const dataIndex = filteredIndices[i];
+      const item = processedData[dataIndex];
+      const top = i * ROW_HEIGHT;
+
+      const row = createRowElement(item, top);
+      fragment.appendChild(row);
+    }
+
+    // Clear and append in one operation
+    scrollContent.textContent = '';
+    scrollContent.appendChild(fragment);
+  }
+
+  function createRowElement(item, top) {
+    const row = document.createElement('div');
+    row.style.cssText = `position:absolute;top:${top}px;left:0;right:0;height:${ROW_HEIGHT}px;`;
+
+    if (item.type === 'header') {
+      row.className = 'text-chooser-row-header';
+      row.setAttribute('data-lang-name', item.data);
+      row.innerHTML = `<span class="name">${item.data}</span>`;
+    } else {
+      const text = item.data;
+      const isSelected = selectedTextInfo && selectedTextInfo.id === text.id;
+
+      row.className = 'text-chooser-row' + (isSelected ? ' selected' : '');
+      row.setAttribute('data-id', text.id);
+
+      let iconsHtml = '';
+      if (text.hasLemma) {
+        iconsHtml += '<span class="text-chooser-lemma"><span></span></span>';
+      }
+      if (text.hasAudio || text.audioDirectory || text.fcbh_audio_ot || text.fcbh_audio_nt) {
+        iconsHtml += '<span class="text-chooser-audio"><span></span></span>';
+      }
+
+      row.innerHTML =
+        `<span class="text-chooser-abbr">${text.abbr}</span>` +
+        `<span class="text-chooser-name">${text.name}</span>` +
+        iconsHtml;
+    }
+
+    return row;
+  }
+
+  // Event delegation for row clicks
+  on(scrollContent, 'click', '.text-chooser-row', function() {
+    const textid = this.getAttribute('data-id');
+    if (textid) {
+      selectText(textid);
+    }
+  });
+
+  function selectText(textid) {
     storeRecentlyUsed(textid);
     hide();
 
@@ -140,10 +238,10 @@ export function TextChooser() {
       selectedTextInfo = data;
       ext.trigger('change', { type: 'change', target: this, data: { textInfo: selectedTextInfo, target: target } });
     });
-  });
+  }
 
   function storeRecentlyUsed(textInfo) {
-    if (text_type !== 'bible') return;
+    if (textType !== 'bible') return;
 
     const textid = (typeof textInfo === 'string') ? textInfo : textInfo.id;
     const existingVersions = recentlyUsed.recent.filter(t => t === textid);
@@ -158,102 +256,61 @@ export function TextChooser() {
     AppSettings.setValue(recentlyUsedKey, recentlyUsed);
   }
 
-  function renderTexts(data) {
-    if (data == null || typeof data === 'undefined') return;
+  function processTexts(data) {
+    if (!data) return;
 
-    const html = [];
-    let arrayOfTexts = data;
+    processedData = [];
 
-    arrayOfTexts = arrayOfTexts.filter(function(t) {
-      if (text_type === 'audio') {
-        const hasAudio = t.hasAudio ||
-          typeof t.audioDirectory !== 'undefined' ||
-          (typeof t.fcbh_audio_ot !== 'undefined' || typeof t.fcbh_audio_nt !== 'undefined');
-        return hasAudio === true;
+    let arrayOfTexts = data.filter(t => {
+      if (textType === 'audio') {
+        return t.hasAudio || t.audioDirectory || t.fcbh_audio_ot || t.fcbh_audio_nt;
       }
       if (t.hasText === false) return false;
-      const thisTextType = typeof t.type === 'undefined' ? 'bible' : t.type;
-      return thisTextType === text_type;
+      const thisTextType = t.type === undefined ? 'bible' : t.type;
+      return thisTextType === textType;
     });
 
-    const languagesSet = new Set();
-    for (let i = 0; i < arrayOfTexts.length; i++) {
-      const text = arrayOfTexts[i];
+    // Group by language
+    const langMap = new Map();
+    for (const text of arrayOfTexts) {
       const langKey = text.langNameEnglish || text.langName || '';
-      if (langKey) {
-        languagesSet.add(langKey);
+      if (!langMap.has(langKey)) {
+        langMap.set(langKey, []);
       }
+      langMap.get(langKey).push(text);
     }
 
-    const languages = Array.from(languagesSet).sort();
+    // Sort languages and build flat structure
+    const languages = Array.from(langMap.keys()).sort();
 
-    for (let i = 0; i < languages.length; i++) {
-      const langName = languages[i];
-      let textsInLang = arrayOfTexts.filter(t => (t.langName === langName || t.langNameEnglish === langName));
+    for (const langName of languages) {
+      const textsInLang = langMap.get(langName);
+      textsInLang.sort((a, b) => a.name.localeCompare(b.name));
 
-      textsInLang.sort((a, b) => {
-        if (a.name === b.name) return 0;
-        return a.name > b.name ? 1 : -1;
+      const displayName = textsInLang[0].langNameEnglish || textsInLang[0].langName;
+
+      // Add header
+      processedData.push({
+        type: 'header',
+        data: displayName
       });
 
-      const langDisplayName = textsInLang[0].langNameEnglish || textsInLang[0].langName;
-      html.push(createHeaderRow('', langDisplayName, '', '', ''));
-
-      for (let j = 0; j < textsInLang.length; j++) {
-        const text = textsInLang[j];
-        html.push(createTextRow(text, langDisplayName, ''));
+      // Add texts with pre-computed search text
+      for (const text of textsInLang) {
+        processedData.push({
+          type: 'text',
+          data: text,
+          searchText: [text.name, text.abbr, text.langName || '', text.langNameEnglish || '']
+            .join(' ').toLowerCase(),
+          langHeader: displayName
+        });
       }
     }
 
-    main.innerHTML = '<table cellspacing="0">' + html.join('') + '</table>';
-    updateSelectedText();
-  }
-
-  function updateSelectedText() {
-    if (selectedTextInfo != null) {
-      const currentSelected = main.querySelector('.text-chooser-row.selected');
-      if (currentSelected) {
-        currentSelected.classList.remove('selected');
-      }
-
-      const selectedEl = main.querySelector('.text-chooser-row[data-id="' + selectedTextInfo.id + '"]');
-      if (selectedEl) {
-        selectedEl.classList.add('selected');
-      }
-    }
-  }
-
-  function createTextRow(text, langDisplayName, className) {
-    const hasAudio = text.hasAudio ||
-      typeof text.audioDirectory !== 'undefined' ||
-      (typeof text.fcbh_audio_ot !== 'undefined' || typeof text.fcbh_audio_nt !== 'undefined');
-    const hasLemma = text.hasLemma;
-
-    const searchText = [
-      text.name,
-      text.abbr,
-      text.langName || '',
-      text.langNameEnglish || ''
-    ].join(' ').toLowerCase();
-
-    return '<tr class="text-chooser-row' + (className !== '' ? ' ' + className : '') + '" ' +
-      'data-id="' + text.id + '" ' +
-      'data-search-text="' + searchText + '" ' +
-      'data-lang-header="' + (langDisplayName || '') + '">' +
-      '<td class="text-chooser-abbr">' + text.abbr + '</td>' +
-      '<td class="text-chooser-name"><span>' + text.name + '</span></td>' +
-      (hasLemma === true ? '<td class="text-chooser-lemma"><span></span></td>' : '') +
-      (hasAudio === true ? '<td class="text-chooser-audio"><span></span></td>' : '') +
-    '</tr>';
-  }
-
-  function createHeaderRow(id, name, englishName, additionalHtml, className) {
-    return '<tr class="text-chooser-row-header' + (className !== '' ? ' ' + className : '') + '" ' +
-      'data-id="' + id + '" ' +
-      'data-lang-name="' + name + '"><td colspan="5">' +
-      '<span class="name">' + name + '</span>' +
-      additionalHtml +
-    '</td></tr>';
+    // Initialize filtered indices to all
+    filteredIndices = processedData.map((_, i) => i);
+    updateScrollHeight();
+    scheduleRender();
   }
 
   function toggle() {
@@ -264,14 +321,14 @@ export function TextChooser() {
     }
   }
 
-  function setTarget(_container, _target, _text_type) {
-    const needsToRerender = _text_type !== text_type;
+  function setTarget(_container, _target, _textType) {
+    const needsRerender = _textType !== textType;
     container = _container;
     target = _target;
-    text_type = _text_type;
+    textType = _textType;
 
-    if (needsToRerender) {
-      renderTexts(list_data);
+    if (needsRerender && listData) {
+      processTexts(listData);
     }
   }
 
@@ -283,22 +340,23 @@ export function TextChooser() {
     size();
     textChooser.showPopover();
 
-    if (!list_data) {
+    if (!listData) {
       main.classList.add('loading-indicator');
       loadTexts(function(data) {
-        list_data = data;
+        listData = data;
         main.classList.remove('loading-indicator');
-        renderTexts(list_data);
+        processTexts(listData);
       });
     } else {
-      main.classList.remove('loading-indicator');
+      scheduleRender();
     }
 
     size();
 
     if (filter.value !== '') {
       filter.value = '';
-      filterVersions();
+      filterText = '';
+      applyFilter();
     }
 
     if (!hasTouch) {
@@ -313,7 +371,7 @@ export function TextChooser() {
   function setTextInfo(text) {
     selectedTextInfo = text;
     storeRecentlyUsed(selectedTextInfo);
-    updateSelectedText();
+    scheduleRender();
   }
 
   function getTextInfo() {
@@ -343,13 +401,17 @@ export function TextChooser() {
     textChooser.style.top = top + 'px';
     textChooser.style.left = left + 'px';
 
-    main.style.height = (maxHeight - header.offsetHeight) + 'px';
+    const mainHeight = maxHeight - header.offsetHeight;
+    main.style.height = mainHeight + 'px';
+    viewportHeight = mainHeight;
 
     // Up arrow
     const upArrowLeft = targetOffset.left - left + 20;
     textChooser.querySelectorAll('.up-arrow, .up-arrow-border').forEach(arrow => {
       arrow.style.left = upArrowLeft + 'px';
     });
+
+    scheduleRender();
   }
 
   function isVisible() {
@@ -374,7 +436,6 @@ export function TextChooser() {
     node,
     getTextInfo,
     setTextInfo,
-    renderTexts,
     size,
     close
   };
