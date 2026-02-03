@@ -8,13 +8,22 @@ import { Reference } from '../bible/BibleReference.js';
 import { i18n } from '../lib/i18n.js';
 import { getApp } from '../core/registry.js';
 import { getText, loadSection } from '../texts/TextLoader.js';
-import WordCloud from 'wordcloud';
+import { renderWordCloud } from '../lib/SimpleWordCloud.js';
+
+// Constants
+const INIT_DELAY_MS = 1500;
+const FONT_SIZE_MIN = 9;
+const FONT_SIZE_MAX = 24;
+
+// Greek stopwords (common articles/prepositions to exclude from statistics)
+const GREEK_STOPWORDS = ['G2532', 'G3588', 'G846', 'G1722', 'G1519', 'G1537', 'G1611'];
 
 const getTextAsync = (textId) => AsyncHelpers.promisify(getText, textId);
 const loadSectionAsync = (textInfo, sectionId) => AsyncHelpers.promisifyWithError(
   (ti, sid, success, error) => loadSection(ti, sid, success, error),
   textInfo, sectionId
 );
+
 const exclusions = {
   "es": ["de"],
   "chs": ["-", ":", ",", "。", "(", ")", "!", ";", "一", "?"],
@@ -36,6 +45,19 @@ const exclusions = {
 };
 
 /**
+ * Sort comparator for descending count order
+ */
+const byCountDescending = (a, b) => b.count - a.count;
+
+/**
+ * Linear interpolation between two values
+ */
+function lerp(start, end, min, max, value) {
+  if (max === min) return start;
+  return start + (end - start) * (value - min) / (max - min);
+}
+
+/**
  * StatisticsWindow Web Component
  * Shows word frequency statistics and word cloud for Bible chapters
  */
@@ -43,7 +65,6 @@ export class StatisticsWindowComponent extends BaseWindow {
   constructor() {
     super();
 
-    // Extend state
     this.state = {
       ...this.state,
       textid: '',
@@ -51,8 +72,7 @@ export class StatisticsWindowComponent extends BaseWindow {
       textInfo: null,
       wordStats: [],
       lemmaData: [],
-      hasLemma: false,
-      currentLemmaIndex: 0
+      hasLemma: false
     };
   }
 
@@ -76,7 +96,6 @@ export class StatisticsWindowComponent extends BaseWindow {
   }
 
   attachEventListeners() {
-    // Message handling
     this.on('message', (e) => this.handleMessage(e));
   }
 
@@ -93,7 +112,7 @@ export class StatisticsWindowComponent extends BaseWindow {
           this.startProcess(selectedTextid, selectedSectionid);
         }
       }
-    }, 1500);
+    }, INIT_DELAY_MS);
   }
 
   cleanup() {
@@ -161,6 +180,72 @@ export class StatisticsWindowComponent extends BaseWindow {
     }
   }
 
+  /**
+   * Process a verse containing lemma markup
+   */
+  processLemmaVerse(verse) {
+    verse.querySelectorAll('l').forEach((lemma) => {
+      const strongsArray = lemma.getAttribute('s').split(' ');
+
+      for (const strongs of strongsArray) {
+        if (GREEK_STOPWORDS.includes(strongs)) {
+          continue;
+        }
+
+        const word = lemma.innerHTML;
+        const existingEntry = this.state.wordStats.find((wi) => wi.strongs === strongs);
+
+        if (existingEntry) {
+          existingEntry.count++;
+          if (!existingEntry.words.includes(word)) {
+            existingEntry.words.push(word);
+          }
+        } else {
+          this.state.wordStats.push({
+            strongs,
+            word,
+            words: [word],
+            count: 1
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * Process a verse containing plain text (no lemma markup)
+   */
+  processTextVerse(verse) {
+    const verseHtml = verse.innerHTML;
+    let verseText = verseHtml.replace(/<.*?>/gi, '');
+
+    if (this.state.textInfo.lang.indexOf('en') === 0) {
+      verseText = verseText.replace(/[^A-Za-z\s]/g, '');
+    }
+
+    const words = verseText.split(' ');
+    const langExclusions = exclusions[this.state.textInfo.lang];
+
+    for (const word of words) {
+      if (word === '' || langExclusions?.includes(word.toLowerCase())) {
+        continue;
+      }
+
+      const existingEntry = this.state.wordStats.find(
+        (wi) => wi.word === word || wi.word.toLowerCase() === word.toLowerCase()
+      );
+
+      if (existingEntry) {
+        existingEntry.count++;
+      } else {
+        this.state.wordStats.push({
+          word,
+          count: 1
+        });
+      }
+    }
+  }
+
   async loadChapterInfo() {
     const resultsNode = this.createElement(`<div class="statistics-section statistics-frequent-words">
       <h3>${i18n.t('windows.stats.frequentwords')}</h3>
@@ -186,99 +271,39 @@ export class StatisticsWindowComponent extends BaseWindow {
 
       const verses = contentEl.querySelectorAll('.verse, .v');
       verses.forEach((verse) => {
-        verse.querySelectorAll('.note').forEach((n) => { n.parentNode.removeChild(n); });
+        verse.querySelectorAll('.note').forEach((n) => n.remove());
 
         if (verse.querySelectorAll('l').length > 0) {
           this.state.hasLemma = true;
-
-          verse.querySelectorAll('l').forEach((lemma) => {
-            const strongs_array = lemma.getAttribute('s').split(' ');
-
-            strongs_array.forEach((strongs) => {
-              if (strongs === 'G2532' || strongs === 'G3588' || strongs === 'G846' ||
-                  strongs === 'G1722' || strongs === 'G1519' || strongs === 'G1537' ||
-                  strongs === 'G1611') {
-                return;
-              }
-
-              const word_infos = this.state.wordStats.filter((wi) => wi.strongs === strongs);
-              const word = lemma.innerHTML;
-
-              if (word_infos.length > 0) {
-                const word_info = word_infos[0];
-                word_info.count++;
-                if (word_info.words.indexOf(word) === -1) {
-                  word_info.words.push(word);
-                }
-              } else {
-                this.state.wordStats.push({
-                  strongs,
-                  word: lemma.innerHTML,
-                  words: [word],
-                  count: 1
-                });
-              }
-            });
-          });
+          this.processLemmaVerse(verse);
         } else {
-          const verse_html = verse.innerHTML;
-          let verse_text = verse_html.replace(/<.*?>/gi, '');
-
-          if (this.state.textInfo.lang.indexOf('en') === 0) {
-            verse_text = verse_text.replace(/[^(A-Za-z\s)]/gi, '');
-          }
-
-          const words = verse_text.split(' ');
-
-          for (let i = 0, il = words.length; i < il; i++) {
-            const word = words[i];
-
-            if (word === '' || (exclusions[this.state.textInfo.lang]?.indexOf(word.toLowerCase()) > -1)) {
-              continue;
-            }
-
-            const word_infos = this.state.wordStats.filter((wi) => wi.word === word || wi.word.toLowerCase() === word.toLowerCase());
-
-            if (word_infos.length > 0) {
-              word_infos[0].count++;
-            } else {
-              this.state.wordStats.push({
-                word,
-                count: 1
-              });
-            }
-          }
+          this.processTextVerse(verse);
         }
       });
 
-      this.state.wordStats.sort((a, b) => {
-        if (a.count > b.count) return -1;
-        else if (a.count < b.count) return 1;
-        else return 0;
-      });
+      this.state.wordStats.sort(byCountDescending);
 
-      const max = Math.max(...this.state.wordStats.map((o) => o.count));
-      const min = Math.min(...this.state.wordStats.map((o) => o.count));
-      const smallestSize = 9;
-      const biggestSize = 24;
+      const counts = this.state.wordStats.map((o) => o.count);
+      const max = Math.max(...counts);
+      const min = Math.min(...counts);
 
-      const display_words = this.state.wordStats;
+      const displayWords = this.state.wordStats;
       let html = '';
-      const wordcloud_data = [];
+      const wordcloudData = [];
 
-      for (const i in display_words) {
-        const word_info = display_words[i];
+      for (let i = 0; i < displayWords.length; i++) {
+        const wordInfo = displayWords[i];
 
-        const size = smallestSize + ((biggestSize - smallestSize) * word_info.count / (max - min));
-        let displayWord = word_info.words ? word_info.words.join(', ') : word_info.word;
-        const wordleWord = word_info.word;
+        const size = lerp(FONT_SIZE_MIN, FONT_SIZE_MAX, min, max, wordInfo.count);
+        let displayWord = wordInfo.words ? wordInfo.words.join(', ') : wordInfo.word;
+        const wordleWord = wordInfo.word;
 
-        if (word_info.strongs) {
-          displayWord = `<l s="${word_info.strongs}">${displayWord}</l>`;
+        if (wordInfo.strongs) {
+          displayWord = `<l s="${wordInfo.strongs}">${displayWord}</l>`;
         }
 
-        html += `<span class="word" style="font-size:${size}px" data-wordindex="${i}"><span dir="${this.state.textInfo.dir}">${displayWord}</span> <span dir="ltr">(${word_info.count})</span></span>`;
-        wordcloud_data.push([wordleWord, word_info.count]);
+        html += `<span class="word" style="font-size:${size}px" data-wordindex="${i}"><span dir="${this.state.textInfo.dir}">${displayWord}</span> <span dir="ltr">(${wordInfo.count})</span></span>`;
+        wordcloudData.push([wordleWord, wordInfo.count]);
       }
 
       wordFrequenciesNode.setAttribute('dir', this.state.textInfo.dir);
@@ -286,52 +311,15 @@ export class StatisticsWindowComponent extends BaseWindow {
       wordFrequenciesNode.classList.remove('loading-indicator');
 
       wordFrequenciesNode.querySelectorAll('.word').forEach((wordEl) => {
-        wordEl.addEventListener('mouseout', () => { this.removeHighlights(); }, false);
+        wordEl.addEventListener('mouseout', () => this.removeHighlights(), false);
         wordEl.addEventListener('mouseover', () => {
           const index = parseInt(wordEl.getAttribute('data-wordindex'), 10);
-          const word_info = this.state.wordStats[index];
-          this.createHighlights(word_info);
+          const wordInfo = this.state.wordStats[index];
+          this.createHighlights(wordInfo);
         }, false);
       });
 
-      const computedStyle = window.getComputedStyle(this.refs.statsMainNode);
-      const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
-      const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
-      const availableWidth = this.refs.statsMainNode.offsetWidth - paddingLeft - paddingRight;
-
-      const cloudWidth = Math.max(300, availableWidth);
-      const cloudHeight = Math.floor(cloudWidth * 3 / 4);
-
-      wordCloudNode.style.width = `${cloudWidth}px`;
-      wordCloudNode.style.height = `${cloudHeight}px`;
-
-      if (WordCloud) {
-        WordCloud(wordCloudNode, {
-          minSize: 5,
-          weightFactor: (size) => {
-            const sizeMax = Math.min(wordCloudNode.offsetWidth / 7, 80);
-            const sizeMin = sizeMax * 0.1;
-            const newSize = sizeMin + (Math.abs(sizeMax - sizeMin) * (size - min) / (max - min));
-            return newSize;
-          },
-          list: wordcloud_data,
-          hover: (hover_word_info) => {
-            this.removeHighlights();
-
-            if (hover_word_info) {
-              const word = hover_word_info[0];
-              const word_info = this.state.wordStats.filter((a) => a.word === word)[0];
-              this.createHighlights(word_info);
-            }
-          },
-          color: (word, size) => {
-            const rValue = Math.round(this.getRangeValue(42, 22, min, max, size));
-            const gValue = Math.round(this.getRangeValue(133, 71, min, max, size));
-            const bValue = Math.round(this.getRangeValue(232, 123, min, max, size));
-            return `rgb(${rValue},${gValue},${bValue})`;
-          }
-        });
-      }
+      this.renderWordCloud(wordCloudNode, wordcloudData, min, max);
 
       if (this.state.hasLemma) {
         this.loadLemmaInfo();
@@ -341,14 +329,43 @@ export class StatisticsWindowComponent extends BaseWindow {
     }
   }
 
-  getRangeValue(value1, value2, minValue, maxValue, value) {
-    if (value2 > value1) {
-      return value1 + (Math.abs(value1 - value2) * (value - minValue) / (maxValue - minValue));
-    } else if (value1 > value2) {
-      return value2 + (Math.abs(value1 - value2) * (value - minValue) / (maxValue - minValue));
-    } else {
-      return value1;
-    }
+  renderWordCloud(wordCloudNode, wordcloudData, min, max) {
+    const computedStyle = window.getComputedStyle(this.refs.statsMainNode);
+    const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+    const availableWidth = this.refs.statsMainNode.offsetWidth - paddingLeft - paddingRight;
+
+    const cloudWidth = Math.max(300, availableWidth);
+    const cloudHeight = Math.floor(cloudWidth * 3 / 4);
+
+    wordCloudNode.style.width = `${cloudWidth}px`;
+    wordCloudNode.style.minHeight = `${cloudHeight}px`;
+
+    const sizeMax = Math.min(cloudWidth / 7, 80);
+    const sizeMin = sizeMax * 0.1;
+
+    renderWordCloud(wordCloudNode, {
+      minSize: 5,
+      weightFactor: (weight) => lerp(sizeMin, sizeMax, min, max, weight),
+      list: wordcloudData,
+      hover: (hoverWordInfo) => {
+        this.removeHighlights();
+
+        if (hoverWordInfo) {
+          const word = hoverWordInfo[0];
+          const wordInfo = this.state.wordStats.find((a) => a.word === word);
+          if (wordInfo) {
+            this.createHighlights(wordInfo);
+          }
+        }
+      },
+      color: (word, weight) => {
+        const rValue = Math.round(lerp(42, 22, min, max, weight));
+        const gValue = Math.round(lerp(133, 71, min, max, weight));
+        const bValue = Math.round(lerp(232, 123, min, max, weight));
+        return `rgb(${rValue},${gValue},${bValue})`;
+      }
+    });
   }
 
   async loadLemmaInfo() {
@@ -359,78 +376,63 @@ export class StatisticsWindowComponent extends BaseWindow {
     this.refs.statsMainNode.appendChild(lemmaNodeWrapper);
     const lemmaNode = lemmaNodeWrapper.querySelector('.statistics-results');
 
-    this.state.currentLemmaIndex = 0;
+    await this.loadAllLemmas();
 
-    await this.getNextLemma();
+    this.state.lemmaData.sort(byCountDescending);
 
-    this.state.lemmaData.sort((a, b) => {
-      if (a.word_info.count > b.word_info.count) return -1;
-      else if (a.word_info.count < b.word_info.count) return 1;
-      else return 0;
-    });
-
-    const rare_words = this.state.lemmaData.filter((lemma) => lemma.frequency <= 5);
+    const rareWords = this.state.lemmaData.filter((lemma) => lemma.frequency <= 5);
 
     let html = '';
-    for (let i = 0, il = rare_words.length; i < il; i++) {
-      const lemma = rare_words[i];
-      const lemmaLang = lemma.word_info.strongs.substr(0, 1).toUpperCase() === 'G' ? 'gr' : 'he';
+    for (const lemma of rareWords) {
+      const lemmaLang = lemma.word_info.strongs[0].toUpperCase() === 'G' ? 'gr' : 'he';
       const dir = lemmaLang === 'gr' ? 'ltr' : 'rtl';
+      const testament = lemmaLang === 'gr' ? 'NT' : 'OT';
 
-      html += `<tr class="rare"><td><l s="${lemma.word_info.strongs}" lang="${lemmaLang}" dir="${dir}">${this.escapeHtml(lemma.lemma)}</td><td>${this.escapeHtml(lemma.word_info.words.join(', '))}</td><td>${lemma.word_info.count} of ${lemma.frequency} in ${lemmaLang === 'gr' ? 'NT' : 'OT'}</td></tr>`;
+      html += `<tr class="rare"><td><l s="${lemma.word_info.strongs}" lang="${lemmaLang}" dir="${dir}">${this.escapeHtml(lemma.lemma)}</td><td>${this.escapeHtml(lemma.word_info.words.join(', '))}</td><td>${lemma.word_info.count} of ${lemma.frequency} in ${testament}</td></tr>`;
     }
 
     lemmaNode.innerHTML = `<table>${html}</table>`;
     lemmaNode.classList.remove('loading-indicator');
   }
 
-  async getNextLemma() {
-    if (this.state.currentLemmaIndex >= this.state.wordStats.length) {
-      return;
+  async loadAllLemmas() {
+    for (const wordInfo of this.state.wordStats) {
+      try {
+        const response = await fetch(`${this.config.baseContentUrl}content/lexicons/strongs/entries/${wordInfo.strongs}.json`);
+        if (!response.ok) continue;
+        const data = await response.json();
+        data.word_info = wordInfo;
+        this.state.lemmaData.push(data);
+      } catch {
+        // Ignore errors loading lexicon entries
+      }
     }
-
-    const word_info = this.state.wordStats[this.state.currentLemmaIndex];
-
-    try {
-      const response = await fetch(`${this.config.baseContentUrl}content/lexicons/strongs/entries/${word_info.strongs}.json`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      data.word_info = word_info;
-      this.state.lemmaData.push(data);
-    } catch {
-      // Ignore errors loading lexicon entries
-    }
-
-    this.state.currentLemmaIndex++;
-    await this.getNextLemma();
   }
 
   removeHighlights() {
     document.querySelectorAll('.BibleWindow .highlight-stats').forEach((el) => {
       if (el.tagName.toLowerCase() === 'l') {
-        el.className = el.className.replace(/highlight/gi, '');
+        el.classList.remove('highlight', 'highlight-stats', 'lemma-highlight');
       } else {
         const textFragment = document.createTextNode(el.textContent);
-        if (el?.parentNode) {
-          el.parentNode.insertBefore(textFragment, el);
-          el.parentNode.removeChild(el);
-        }
+        el.parentNode?.replaceChild(textFragment, el);
       }
     });
   }
 
-  createHighlights(word_info) {
+  createHighlights(wordInfo) {
     this.removeHighlights();
 
     document.querySelectorAll(`.${this.state.sectionid}`).forEach((el) => {
-      if (typeof word_info.strongs !== 'undefined') {
-        el.querySelectorAll(`l[s*="${word_info.strongs.substr(1)}"],l[s*="${word_info.strongs}"]`).forEach((lEl) => {
+      if (wordInfo.strongs !== undefined) {
+        const strongsNum = wordInfo.strongs.substring(1);
+        el.querySelectorAll(`l[s*="${strongsNum}"],l[s*="${wordInfo.strongs}"]`).forEach((lEl) => {
           lEl.classList.add('highlight', 'highlight-stats', 'lemma-highlight');
         });
       } else {
         const XRegExp = window.XRegExp;
         if (XRegExp) {
-          const r = new XRegExp(`\\b${word_info.word}\\b`, 'gi');
+          const r = new XRegExp(`\\b${wordInfo.word}\\b`, 'gi');
           el.innerHTML = el.innerHTML.replace(r, (match) => `<span class="highlight highlight-stats">${match}</span>`);
         }
       }

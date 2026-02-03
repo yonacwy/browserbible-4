@@ -12,7 +12,7 @@ import { COLLISION_OFFSET_MAX, COLLISION_GRID_SIZE, ICON_SIZES } from './constan
  */
 export function getMarkerBounds(marker) {
   const transform = marker.getAttribute('transform');
-  const match = transform.match(/translate\(([-\d.]+),\s*([-\d.]+)\)/);
+  const match = /translate\(([-\d.]+),\s*([-\d.]+)\)/.exec(transform);
 
   if (!match) {
     return null;
@@ -176,7 +176,7 @@ export function optimizeMarkerPositions(markers, iterations = 3) {
 
               if (tier1 < tier2) {
                 // marker1 is more important, don't move it
-                return;
+                
               } else if (tier1 === tier2) {
                 // Same tier, both move
                 const offset = calculateSeparationOffset(bounds1, bounds2);
@@ -223,7 +223,7 @@ export function optimizeMarkerPositions(markers, iterations = 3) {
 export function applyCollisionOffsets(offsets) {
   offsets.forEach((offset, marker) => {
     const transform = marker.getAttribute('transform');
-    const match = transform.match(/translate\(([-\d.]+),\s*([-\d.]+)\)/);
+    const match = /translate\(([-\d.]+),\s*([-\d.]+)\)/.exec(transform);
 
     if (match) {
       const x = parseFloat(match[1]);

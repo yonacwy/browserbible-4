@@ -6,7 +6,7 @@ import { BaseWindow, AsyncHelpers, registerWindowComponent } from './BaseWindow.
 import { Reference } from '../bible/BibleReference.js';
 import { BOOK_DATA } from '../bible/BibleData.js';
 import { loadTexts, getText, loadSection } from '../texts/TextLoader.js';
-import { diffWords } from 'diff';
+import { diffWords } from '../lib/SimpleDiff.js';
 import { TextChooser } from '../ui/TextChooser.js';
 import { TextNavigator } from '../ui/TextNavigator.js';
 import { toElement } from '../lib/helpers.esm.js';

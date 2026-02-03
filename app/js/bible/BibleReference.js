@@ -82,9 +82,10 @@ export function Reference(...args) {
     if (afterSeparator) {
       if (afterRange) verse2 = num;
       else verse1 = num;
+    } else if (afterRange) {
+      chapter2 = num;
     } else {
-      if (afterRange) chapter2 = num;
-      else chapter1 = num;
+      chapter1 = num;
     }
   }
 

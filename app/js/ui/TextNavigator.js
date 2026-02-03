@@ -178,8 +178,8 @@ export function TextNavigator() {
     let divsEl = changer.querySelector('.text-navigator-divisions');
     if (fullBookMode) {
       if (divsEl) divsEl.classList.add('text-navigator-divisions-full');
-    } else {
-      if (divsEl) divsEl.classList.remove('text-navigator-divisions-full');
+    } else if (divsEl) {
+      divsEl.classList.remove('text-navigator-divisions-full');
     }
 
     for (let i = 0, il = textInfo.divisions.length; i < il; i++) {

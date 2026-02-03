@@ -3,7 +3,7 @@
  */
 
 import { BaseWindow, registerWindowComponent } from '../BaseWindow.js';
-import { on, toElement, offset } from '../../lib/helpers.esm.js';
+import { on, offset } from '../../lib/helpers.esm.js';
 import { Reference } from '../../bible/BibleReference.js';
 import { fuzzySearchLocations } from './fuzzy-search.js';
 import { SVG_WIDTH, SVG_HEIGHT, COLLISION_DETECTION_ENABLED } from './constants.js';

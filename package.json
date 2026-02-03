@@ -17,14 +17,11 @@
     "test:ui": "playwright test --ui",
     "lint": "eslint app/js",
     "lint:fix": "eslint app/js --fix",
-    "vd:dev": "npx vite --config verse-detection/vite.config.js serve verse-detection",
-    "vd:build": "npx vite --config verse-detection/vite.config.js build",
-    "vd:preview": "npx vite --config verse-detection/vite.config.js preview verse-detection"
+    "vd:dev": "vite --config verse-detection/vite.config.js serve verse-detection",
+    "vd:build": "vite --config verse-detection/vite.config.ts build && vite --config verse-detection/vite.config.auto.ts build",
+    "vd:preview": "vite --config verse-detection/vite.config.js preview verse-detection"
   },
-  "dependencies": {
-    "diff": "^8.0.2",
-    "wordcloud": "^1.2.3"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.49.0",

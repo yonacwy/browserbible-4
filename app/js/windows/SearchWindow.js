@@ -4,7 +4,7 @@
 
 import { BaseWindow, AsyncHelpers, registerWindowComponent } from './BaseWindow.js';
 import { offset, on, closest } from '../lib/helpers.esm.js';
-import { getConfig } from '../core/config.js';
+
 import { getApp } from '../core/registry.js';
 import { i18n } from '../lib/i18n.js';
 import { BOOK_DATA, OT_BOOKS, NT_BOOKS, EXTRA_MATTER } from '../bible/BibleData.js';

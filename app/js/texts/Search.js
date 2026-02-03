@@ -10,7 +10,7 @@ import { BOOK_DATA } from '../bible/BibleData.js';
 import { loadSection, getText } from './TextLoader.js';
 
 export const SearchTools = {
-  isAsciiRegExp: new RegExp('^[\\x20-\\x7E]*$', 'gi'),
+  isAsciiRegExp: /^[\x20-\x7E]*$/gi,
   isLemmaRegExp: /[GgHh]\d{1,6}/g,
   HASHSIZE: 20,
 
@@ -25,34 +25,32 @@ export const SearchTools = {
           new RegExp(`s=("|\')(\\w\\d{1,4}[a-z]?\\s)?(G|H)?${part.substr(1)}[a-z]?(\\s\\w\\d{1,4}[a-z]?)?("|\')`, 'gi')
         );
       }
-    } else {
+    } else if (searchText.substring(0, 1) === '"' && searchText.substring(searchText.length - 1) === '"') {
       // Check for quoted search "jesus christ"
-      if (searchText.substring(0, 1) === '"' && searchText.substring(searchText.length - 1) === '"') {
-        let withoutQuotes = searchText.substring(1, searchText.length - 1);
-        withoutQuotes = withoutQuotes.replace(/\s/g, '(\\s?(<(.|\\n)*?>)?\\s?)?');
+      let withoutQuotes = searchText.substring(1, searchText.length - 1);
+      withoutQuotes = withoutQuotes.replace(/\s/g, '(\\s?(<(.|\\n)*?>)?\\s?)?');
 
-        // Use native RegExp with word boundary
-        searchTermsRegExp.push(new RegExp(`\\b(${withoutQuotes})\\b`, 'gi'));
+      // Use native RegExp with word boundary
+      searchTermsRegExp.push(new RegExp(`\\b(${withoutQuotes})\\b`, 'gi'));
+    } else {
+      // ASCII characters have predictable word boundaries
+      SearchTools.isAsciiRegExp.lastIndex = 0;
+
+      if (SearchTools.isAsciiRegExp.test(searchText)) {
+        // For non-quoted searches, use "AND" search
+        let andSearchParts = searchText.split(/\s+AND\s+|\s+/gi);
+
+        // Filter for duplicate words
+        andSearchParts = andSearchParts.filter((item, index, arr) => arr.indexOf(item) === index);
+
+        for (const part of andSearchParts) {
+          searchTermsRegExp.push(new RegExp(`\\b(${part})\\b`, 'gi'));
+        }
       } else {
-        // ASCII characters have predictable word boundaries
-        SearchTools.isAsciiRegExp.lastIndex = 0;
+        const words = SearchTools.splitWords(searchText);
 
-        if (SearchTools.isAsciiRegExp.test(searchText)) {
-          // For non-quoted searches, use "AND" search
-          let andSearchParts = searchText.split(/\s+AND\s+|\s+/gi);
-
-          // Filter for duplicate words
-          andSearchParts = andSearchParts.filter((item, index, arr) => arr.indexOf(item) === index);
-
-          for (const part of andSearchParts) {
-            searchTermsRegExp.push(new RegExp(`\\b(${part})\\b`, 'gi'));
-          }
-        } else {
-          const words = SearchTools.splitWords(searchText);
-
-          for (const word of words) {
-            searchTermsRegExp.push(new RegExp(word, 'gi'));
-          }
+        for (const word of words) {
+          searchTermsRegExp.push(new RegExp(word, 'gi'));
         }
       }
     }
@@ -204,8 +202,8 @@ export class SearchIndexLoader {
 
     if (this.isLemmaSearch) {
       key = searchTerm.toUpperCase();
-      const letter = key.substr(0, 1);
-      const firstNumber = searchTerm.length >= 5 ? searchTerm.substr(1, 1) : '0';
+      const letter = key.substring(0, 1);
+      const firstNumber = searchTerm.length >= 5 ? searchTerm.substring(1, 2) : '0';
       indexUrl = `${this.baseContentPath}${this.textInfo.id}/indexlemma/_${letter.toUpperCase()}${firstNumber}000.json`;
     } else {
       key = searchTerm.toLowerCase();

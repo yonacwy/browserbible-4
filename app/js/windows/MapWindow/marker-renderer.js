@@ -3,7 +3,7 @@
  * SVG marker creation and manipulation for map locations
  */
 
-import { MAP_BOUNDS, SVG_WIDTH, SVG_HEIGHT, ZOOM_THRESHOLDS, ICON_SIZES } from './constants.js';
+import { MAP_BOUNDS, SVG_WIDTH, ZOOM_THRESHOLDS, ICON_SIZES } from './constants.js';
 import { geoToSvg, getImportanceTier } from './geo-utils.js';
 import { createLocationIcon } from './icon-library.js';
 
