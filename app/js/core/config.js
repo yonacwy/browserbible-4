@@ -118,12 +118,12 @@ const customConfigs = {
   }
 };
 
-let config = { ...defaultConfig };
+const config = { ...defaultConfig };
 
 export const getConfig = () => config;
 
 export const updateConfig = (newConfig) => {
-  config = { ...config, ...newConfig };
+  Object.assign(config, newConfig);
   return config;
 };
 

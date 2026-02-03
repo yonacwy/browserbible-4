@@ -128,6 +128,56 @@ function calculateSeparationOffset(bounds1, bounds2) {
 }
 
 /**
+ * Process collision between two markers and calculate offset adjustments
+ * @param {Object} marker1 - First marker element
+ * @param {Object} bounds1 - First marker bounds
+ * @param {Object} marker2 - Second marker element
+ * @param {Object} bounds2 - Second marker bounds
+ * @returns {Object|null} Offset adjustment {dx, dy} or null if no adjustment needed
+ */
+function processMarkerCollision(marker1, bounds1, marker2, bounds2) {
+  if (marker1 === marker2) return null;
+
+  if (!checkOverlap(bounds1, bounds2)) return null;
+
+  // Higher tier markers don't move for lower tier markers
+  const tier1 = bounds1.tier;
+  const tier2 = bounds2.tier;
+
+  if (tier1 < tier2) {
+    // marker1 is more important, don't move it
+    return null;
+  }
+
+  // Same tier or marker1 is less important - calculate offset
+  return calculateSeparationOffset(bounds1, bounds2);
+}
+
+/**
+ * Accumulate collision offsets from neighbor markers
+ * @param {Object} marker1 - First marker element
+ * @param {Object} bounds1 - First marker bounds
+ * @param {Array} neighborMarkers - Array of neighbor marker objects
+ * @returns {Object} Accumulated offset {totalDx, totalDy, collisionCount}
+ */
+function accumulateNeighborCollisions(marker1, bounds1, neighborMarkers) {
+  let totalDx = 0;
+  let totalDy = 0;
+  let collisionCount = 0;
+
+  neighborMarkers.forEach(({ marker: marker2, bounds: bounds2 }) => {
+    const offset = processMarkerCollision(marker1, bounds1, marker2, bounds2);
+    if (offset) {
+      totalDx += offset.dx;
+      totalDy += offset.dy;
+      collisionCount++;
+    }
+  });
+
+  return { totalDx, totalDy, collisionCount };
+}
+
+/**
  * Optimize marker positions to minimize overlap
  * @param {Array} markers - Array of marker SVG elements
  * @param {number} iterations - Number of optimization iterations (default: 3)
@@ -165,33 +215,10 @@ export function optimizeMarkerPositions(markers, iterations = 3) {
         // Check against neighbors
         neighborKeys.forEach(neighborKey => {
           const neighborMarkers = grid.get(neighborKey) || [];
-
-          neighborMarkers.forEach(({ marker: marker2, bounds: bounds2 }) => {
-            if (marker1 === marker2) return;
-
-            if (checkOverlap(bounds1, bounds2)) {
-              // Higher tier markers don't move for lower tier markers
-              const tier1 = bounds1.tier;
-              const tier2 = bounds2.tier;
-
-              if (tier1 < tier2) {
-                // marker1 is more important, don't move it
-                
-              } else if (tier1 === tier2) {
-                // Same tier, both move
-                const offset = calculateSeparationOffset(bounds1, bounds2);
-                totalDx += offset.dx;
-                totalDy += offset.dy;
-                collisionCount++;
-              } else {
-                // marker1 is less important, move it more
-                const offset = calculateSeparationOffset(bounds1, bounds2);
-                totalDx += offset.dx;
-                totalDy += offset.dy;
-                collisionCount++;
-              }
-            }
-          });
+          const result = accumulateNeighborCollisions(marker1, bounds1, neighborMarkers);
+          totalDx += result.totalDx;
+          totalDy += result.totalDy;
+          collisionCount += result.collisionCount;
         });
 
         if (collisionCount > 0) {

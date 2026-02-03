@@ -302,7 +302,10 @@ export function Scroller(node) {
   };
 
   const insertContent = (loadType, content, nodeScrolltopBefore, wrapperHeightBefore) => {
-    const contentEl = typeof content === 'string' ? null : (content?.nodeType ? content : content?.[0]);
+    let contentEl = null;
+    if (typeof content !== 'string') {
+      contentEl = content?.nodeType ? content : content?.[0];
+    }
 
     switch (loadType) {
       case 'text':

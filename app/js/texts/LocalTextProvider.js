@@ -10,6 +10,41 @@ const providerName = 'local';
 const fullName = 'Local Files';
 const textData = {};
 
+function processFootnotes(content, notes) {
+  for (const footnote of notes) {
+    const noteLink = footnote.querySelector('a');
+    const noteid = noteLink?.getAttribute('href') ?? null;
+    const footnotetext = footnote.querySelector('.text');
+    const noteintext = noteid && content ? content.querySelector(noteid) : null;
+
+    if (noteintext && footnotetext) {
+      noteintext.appendChild(footnotetext);
+    }
+  }
+}
+
+function processContent(content, textInfo, textid) {
+  if (!content) return;
+
+  content.setAttribute('data-textid', textid);
+  content.setAttribute('data-lang3', textInfo.lang);
+
+  // Move section heading before chapter marker if needed
+  const c = content.querySelector('.c');
+  if (c) {
+    const afterc = c.nextElementSibling;
+    if (afterc?.classList.contains('s')) {
+      c.parentNode.insertBefore(afterc, c);
+    }
+  }
+
+  // Move verse numbers outside verse elements
+  for (const vnum of content.querySelectorAll('.v-num')) {
+    const v = vnum.closest('.v');
+    if (v) v.parentNode.insertBefore(vnum, v);
+  }
+}
+
 export function getTextManifest(callback) {
   const config = getConfig();
   const textsUrl = `${config.baseContentUrl}content/texts/${config.textsIndexPath}`;
@@ -76,52 +111,18 @@ export function loadSection(textid, sectionid, callback, errorCallback) {
         return response.text();
       })
       .then(text => {
-        const htmlContent = text.indexOf('</head>') > -1 ? text.split('</head>')[1] : text;
+        const htmlContent = text.includes('</head>') ? text.split('</head>')[1] : text;
         const tempDiv = document.createElement('div');
-
         tempDiv.innerHTML = htmlContent;
 
         const content = tempDiv.querySelector('.section');
-        const footnotes = tempDiv.querySelector('.footnotes');
-        const notes = footnotes?.querySelectorAll('.footnote') ?? [];
+        const notes = tempDiv.querySelectorAll('.footnotes .footnote');
 
-        if (notes.length > 0) {
-          for (const footnote of notes) {
-            const noteLink = footnote.querySelector('a');
-            const noteid = noteLink?.getAttribute('href') ?? null;
-            const footnotetext = footnote.querySelector('.text');
-            const noteintext = noteid && content ? content.querySelector(noteid) : null;
-
-            if (noteintext && footnotetext) {
-              noteintext.appendChild(footnotetext);
-            }
-          }
-        }
-
-        if (content) {
-          content.setAttribute('data-textid', textid);
-          content.setAttribute('data-lang3', textInfo.lang);
-
-          const c = content.querySelector('.c');
-          if (c) {
-            const afterc = c.nextElementSibling;
-            if (afterc?.classList.contains('s')) {
-              c.parentNode.insertBefore(afterc, c);
-            }
-          }
-
-          for (const vnum of content.querySelectorAll('.v-num')) {
-            const v = vnum.closest('.v');
-            if (v) {
-              v.parentNode.insertBefore(vnum, v);
-            }
-          }
-        }
+        if (notes.length > 0) processFootnotes(content, notes);
+        processContent(content, textInfo, textid);
 
         const wrapperDiv = document.createElement('div');
-        if (content) {
-          wrapperDiv.appendChild(content);
-        }
+        if (content) wrapperDiv.appendChild(content);
         callback(wrapperDiv.innerHTML);
       })
       .catch(error => {

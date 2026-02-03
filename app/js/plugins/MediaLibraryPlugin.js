@@ -28,100 +28,73 @@ export const MediaLibraryPlugin = (app) => {
   // Get MediaLibrary from global if available
   const MediaLibrary = window.MediaLibrary;
 
-  // Define functions before they are used
-  const setupMediaEvents = () => {
-    // handle clicks
-    const windowsMain = document.querySelector('.windows-main');
-    if (windowsMain) {
-      windowsMain.addEventListener('click', (e) => {
-        const icon = e.target.closest('.mediathumb');
-        if (!icon) return;
-        // determine what kind of media this is
-        const mediaFolder = icon.getAttribute('data-mediafolder');
-        const verse = icon.closest('.verse, .v');
-        const verseid = verse?.getAttribute('data-id') ?? '';
-        const reference = new Reference(verseid).toString();
-        let mediaLibrary = null;
-        let mediaForVerse = null;
+  const showImagePopup = (icon, mediaLibrary, mediaForVerse, reference) => {
+    const bodyEl = mediaPopup.body;
+    bodyEl.innerHTML = '';
 
-        // find library
-        for (const ml of mediaLibraries) {
-          if (ml.folder === mediaFolder) {
-            mediaLibrary = ml;
-            break;
-          }
-        }
-
-        mediaForVerse = mediaLibrary.data[verseid];
-
-        const bodyEl = mediaPopup.body;
-
-        switch (mediaLibrary.type) {
-          case 'image':
-            // clear it out!
-            bodyEl.innerHTML = '';
-
-            let html = '';
-            for (const mediaInfo of mediaForVerse) {
-              // Handle exts as either array or string
-              const ext = Array.isArray(mediaInfo.exts) ? mediaInfo.exts[0] : mediaInfo.exts;
-              const fullUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${mediaInfo.filename}.${ext}`;
-              const thumbUrl = fullUrl.replace('.jpg', '-thumb.jpg');
-
-              html += `<li><a href="${fullUrl}" target="_blank"><img src="${thumbUrl}" /></a></li>`;
-            }
-
-            const strong = createElements(`<strong>${reference.toString()}</strong>`);
-            bodyEl.appendChild(strong);
-
-            const ul = createElements(`<ul class="inline-image-library-thumbs">${html}</ul>`);
-            bodyEl.appendChild(ul);
-
-            mediaPopup.setClickTargets([icon]);
-            mediaPopup.position(icon).show();
-            break;
-
-          case 'video':
-            const videoMediaInfo = mediaForVerse[0];
-            // Handle exts as either array or string
-            const videoExt = Array.isArray(videoMediaInfo.exts) ? videoMediaInfo.exts[0] : videoMediaInfo.exts;
-            const videoUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${videoMediaInfo.filename}.${videoExt}`;
-
-            // Use global showVideo if available
-            if (window.sofia?.globals?.showVideo) {
-              window.sofia.globals.showVideo(videoUrl, videoMediaInfo.name);
-            }
-            break;
-
-          case 'jfm':
-            const section = icon.closest('.section');
-            const lang = section?.getAttribute('data-lang3') ?? 'eng';
-            const jfmMediaInfo = mediaForVerse[0];
-
-            // Get JesusFilmMediaApi from global if available
-            const JesusFilmMediaApi = window.JesusFilmMediaApi;
-
-            if (JesusFilmMediaApi) {
-              // Try Arclight API, falls back to static URL if CORS blocked
-              JesusFilmMediaApi.getPlayer(lang, jfmMediaInfo.filename, (videoUrl, videoLang) => {
-                if (window.sofia?.globals?.showVideo) {
-                  if (videoUrl !== null) {
-                    // Arclight API returned a streaming URL
-                    const title = `${jfmMediaInfo.name} (${videoLang}${lang !== videoLang ? `/${lang}` : ''})`;
-                    window.sofia.globals.showVideo(videoUrl, title);
-                  } else {
-                    // Fallback to static URL from media library
-                    const ext = Array.isArray(jfmMediaInfo.exts) ? jfmMediaInfo.exts[0] : jfmMediaInfo.exts;
-                    const staticUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${jfmMediaInfo.filename}.${ext}`;
-                    window.sofia.globals.showVideo(staticUrl, jfmMediaInfo.name);
-                  }
-                }
-              });
-            }
-            break;
-        }
-      });
+    let html = '';
+    for (const mediaInfo of mediaForVerse) {
+      const ext = Array.isArray(mediaInfo.exts) ? mediaInfo.exts[0] : mediaInfo.exts;
+      const fullUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${mediaInfo.filename}.${ext}`;
+      const thumbUrl = fullUrl.replace('.jpg', '-thumb.jpg');
+      html += `<li><a href="${fullUrl}" target="_blank"><img src="${thumbUrl}" /></a></li>`;
     }
+
+    bodyEl.appendChild(createElements(`<strong>${reference}</strong>`));
+    bodyEl.appendChild(createElements(`<ul class="inline-image-library-thumbs">${html}</ul>`));
+    mediaPopup.setClickTargets([icon]);
+    mediaPopup.position(icon).show();
+  };
+
+  const showVideo = (mediaLibrary, mediaForVerse) => {
+    const videoMediaInfo = mediaForVerse[0];
+    const videoExt = Array.isArray(videoMediaInfo.exts) ? videoMediaInfo.exts[0] : videoMediaInfo.exts;
+    const videoUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${videoMediaInfo.filename}.${videoExt}`;
+    if (window.sofia?.globals?.showVideo) {
+      window.sofia.globals.showVideo(videoUrl, videoMediaInfo.name);
+    }
+  };
+
+  const showJfmVideo = (icon, mediaLibrary, mediaForVerse) => {
+    const section = icon.closest('.section');
+    const lang = section?.getAttribute('data-lang3') ?? 'eng';
+    const jfmMediaInfo = mediaForVerse[0];
+    const JesusFilmMediaApi = window.JesusFilmMediaApi;
+
+    if (!JesusFilmMediaApi || !window.sofia?.globals?.showVideo) return;
+
+    JesusFilmMediaApi.getPlayer(lang, jfmMediaInfo.filename, (videoUrl, videoLang) => {
+      if (videoUrl !== null) {
+        const langSuffix = lang !== videoLang ? '/' + lang : '';
+        const title = jfmMediaInfo.name + ' (' + videoLang + langSuffix + ')';
+        window.sofia.globals.showVideo(videoUrl, title);
+      } else {
+        const ext = Array.isArray(jfmMediaInfo.exts) ? jfmMediaInfo.exts[0] : jfmMediaInfo.exts;
+        const staticUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${jfmMediaInfo.filename}.${ext}`;
+        window.sofia.globals.showVideo(staticUrl, jfmMediaInfo.name);
+      }
+    });
+  };
+
+  const setupMediaEvents = () => {
+    const windowsMain = document.querySelector('.windows-main');
+    if (!windowsMain) return;
+
+    windowsMain.addEventListener('click', (e) => {
+      const icon = e.target.closest('.mediathumb');
+      if (!icon) return;
+
+      const mediaFolder = icon.getAttribute('data-mediafolder');
+      const verse = icon.closest('.verse, .v');
+      const verseid = verse?.getAttribute('data-id') ?? '';
+      const reference = new Reference(verseid).toString();
+      const mediaLibrary = mediaLibraries.find(ml => ml.folder === mediaFolder);
+      const mediaForVerse = mediaLibrary.data[verseid];
+
+      if (mediaLibrary.type === 'image') showImagePopup(icon, mediaLibrary, mediaForVerse, reference);
+      else if (mediaLibrary.type === 'video') showVideo(mediaLibrary, mediaForVerse);
+      else if (mediaLibrary.type === 'jfm') showJfmVideo(icon, mediaLibrary, mediaForVerse);
+    });
   };
 
   // process chapters, add image icon to verses

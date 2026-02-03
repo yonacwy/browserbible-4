@@ -159,9 +159,8 @@ export function slideDown(el, duration, callback) {
   el.style.height = '0px';
   el.style.transition = 'height ' + duration + 'ms';
 
-  // Force reflow before animation - accessing offsetHeight triggers layout
-  // eslint-disable-next-line no-unused-vars
-  const _forceReflow = el.offsetHeight;
+  // Force reflow before animation
+  el.getBoundingClientRect();
 
   el.style.height = height + 'px';
 
@@ -181,9 +180,8 @@ export function slideUp(el, duration, callback) {
   el.style.height = el.scrollHeight + 'px';
   el.style.transition = 'height ' + duration + 'ms';
 
-  // Force reflow before animation - accessing offsetHeight triggers layout
-  // eslint-disable-next-line no-unused-vars
-  const _forceReflow = el.offsetHeight;
+  // Force reflow before animation
+  el.getBoundingClientRect();
 
   el.style.height = '0px';
 

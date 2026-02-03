@@ -17,6 +17,16 @@ let handleBibleRefMouseover = null;
 let handleBibleRefMouseout = null;
 
 /**
+ * Remove notes from a verse element
+ * @param {Element} verse - The verse element to process
+ */
+const removeNotesFromVerse = (verse) => {
+  verse.querySelectorAll('.note').forEach((note) => {
+    note.parentNode.removeChild(note);
+  });
+};
+
+/**
  * Create a cross reference popup plugin
  * @param {Object} app - Application instance
  * @returns {Object} Plugin API
@@ -116,11 +126,7 @@ export const CrossReferencePopupPlugin = (app) => {
             let html = '';
 
             for (const verse of verseEls) {
-              // Remove notes
-              verse.querySelectorAll('.note').forEach((note) => {
-                note.parentNode.removeChild(note);
-              });
-
+              removeNotesFromVerse(verse);
               html += verse.innerHTML;
             }
 

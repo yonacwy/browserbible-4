@@ -248,77 +248,53 @@ export class SearchIndexLoader {
       });
   }
 
+  mergeOrIndexes() {
+    const fragmentids = this.loadedIndexes.flat();
+    const sections = this.textInfo.sections;
+
+    const parseFragment = (fid) => {
+      const [sectionid, num] = fid.split('_');
+      return { sectionid, sectionIndex: sections.indexOf(sectionid), fragmentNum: parseInt(num, 10) };
+    };
+
+    return fragmentids.sort((a, b) => {
+      const fa = parseFragment(a), fb = parseFragment(b);
+      return (fa.sectionIndex - fb.sectionIndex) || (fa.fragmentNum - fb.fragmentNum);
+    });
+  }
+
+  intersectAndIndexes() {
+    const indexes = this.loadedIndexes;
+    if (indexes.length === 1) return indexes[0];
+    if (indexes.length === 0) return [];
+    return indexes[0].filter(val => indexes.slice(1).every(idx => idx.includes(val)));
+  }
+
+  groupBySection(fragmentids) {
+    const results = [];
+    const divisions = this.searchDivisions;
+
+    for (const fid of fragmentids) {
+      if (!fid) continue;
+      const sectionid = fid.split('_')[0];
+      const bookCode = sectionid.substring(0, 2);
+
+      if (divisions.length > 0 && !divisions.includes(bookCode)) continue;
+
+      const existing = results.find(r => r.sectionid === sectionid);
+      if (existing) existing.fragmentids.push(fid);
+      else results.push({ sectionid, fragmentids: [fid] });
+    }
+    return results;
+  }
+
   processIndexes() {
     let fragmentids = [];
     this.loadedResults = [];
 
     if (this.loadedIndexes.length > 0) {
-      if (this.searchType === 'OR') {
-        for (const index of this.loadedIndexes) {
-          fragmentids = fragmentids.concat(index);
-        }
-
-        const textInfo = this.textInfo;
-        const splitFragment = (fragmentid) => {
-          const parts = fragmentid.split('_');
-          const sectionid = parts[0];
-          const sectionIndex = textInfo.sections.indexOf(sectionid);
-          const fragmentNum = parseInt(parts[1], 10);
-          return { sectionid, sectionIndex, fragmentNum };
-        };
-
-        fragmentids.sort((a, b) => {
-          const fraga = splitFragment(a);
-          const fragb = splitFragment(b);
-
-          if (fraga.sectionIndex < fragb.sectionIndex ||
-              (fraga.sectionIndex === fragb.sectionIndex && fraga.fragmentNum < fragb.fragmentNum))
-            return -1;
-          if (fraga.sectionIndex > fragb.sectionIndex ||
-              (fraga.sectionIndex === fragb.sectionIndex && fraga.fragmentNum > fragb.fragmentNum))
-            return 1;
-          return 0;
-        });
-      } else if (this.searchType === 'AND') {
-        const totalIndexes = this.loadedIndexes.length;
-        const loadedIndexes = this.loadedIndexes;
-
-        if (totalIndexes === 1) {
-          fragmentids = loadedIndexes[0];
-        } else if (totalIndexes > 1) {
-          fragmentids = loadedIndexes[0].filter(val => {
-            let inOtherArrays = true;
-            for (let i = 1; i < totalIndexes; i++) {
-              if (loadedIndexes[i].indexOf(val) === -1) {
-                inOtherArrays = false;
-                break;
-              }
-            }
-            return inOtherArrays;
-          });
-        }
-      }
-
-      if (fragmentids) {
-        const searchDivisions = this.searchDivisions;
-
-        for (const fragmentid of fragmentids) {
-          if (fragmentid !== '' && fragmentid != null) {
-            const sectionid = fragmentid.split('_')[0];
-            const dbsBookCode = sectionid.substring(0, 2);
-
-            if (searchDivisions.length === 0 || searchDivisions.indexOf(dbsBookCode) > -1) {
-              const sectionidInfo = this.loadedResults.filter(val => val.sectionid === sectionid);
-
-              if (sectionidInfo.length === 0) {
-                this.loadedResults.push({ sectionid, fragmentids: [fragmentid] });
-              } else {
-                sectionidInfo[0].fragmentids.push(fragmentid);
-              }
-            }
-          }
-        }
-      }
+      fragmentids = this.searchType === 'OR' ? this.mergeOrIndexes() : this.intersectAndIndexes();
+      this.loadedResults = this.groupBySection(fragmentids);
     }
 
     this.trigger('complete', {
@@ -465,58 +441,43 @@ export class TextSearch {
       });
   }
 
+  buildBruteForceIndex() {
+    return this.textInfo.sections.map(sectionid => {
+      const bookCode = sectionid.substr(0, 2);
+      const chapterNum = parseInt(sectionid.substr(2), 10);
+      const verseCount = BOOK_DATA[bookCode]?.chapters?.[chapterNum - 1] ?? 0;
+      const fragmentids = Array.from({ length: verseCount }, (_, i) => `${sectionid}_${i + 1}`);
+      return { sectionid, fragmentids };
+    });
+  }
+
+  buildStemRegexps(stemInfo) {
+    return stemInfo.flatMap(info => info.words.map(word => new RegExp(`\\b(${word})\\b`, 'gi')));
+  }
+
   indexesLoaded(e) {
-    if (!e.data?.loadedIndexes) {
+    if (!e.data?.loadedIndexes) return;
+
+    if (e.data.loadedIndexes.length === 0) {
+      this.searchIndexesData = this.buildBruteForceIndex();
+      this.loadNextSectionid();
       return;
     }
 
-    if (e.data.loadedIndexes.length === 0) {
-      // Brute force - create "index" of all verses
-      this.searchIndexesData = [];
+    this.trigger('indexcomplete', {
+      type: 'indexcomplete',
+      target: this,
+      data: { searchIndexesData: e.data.loadedResults }
+    });
 
-      for (const sectionid of this.textInfo.sections) {
-        const dbsBookCode = sectionid.substr(0, 2);
-        const chapterNumber = parseInt(sectionid.substr(2), 10);
-        const sectionData = {
-          sectionid,
-          fragmentids: []
-        };
-
-        if (BOOK_DATA[dbsBookCode]?.chapters) {
-          for (let v = 1; v <= BOOK_DATA[dbsBookCode].chapters[chapterNumber - 1]; v++) {
-            sectionData.fragmentids.push(`${sectionid}_${v}`);
-          }
-        }
-
-        this.searchIndexesData.push(sectionData);
-      }
-
-      this.loadNextSectionid();
-    } else {
-      this.trigger('indexcomplete', {
-        type: 'indexcomplete',
-        target: this,
-        data: { searchIndexesData: e.data.loadedResults }
-      });
-
-      if (e.data.stemInfo?.length > 0) {
-        this.searchType = 'OR';
-        this.searchTermsRegExp = [];
-
-        for (const stemInfo of e.data.stemInfo) {
-          const stemWords = stemInfo.words;
-
-          for (const word of stemWords) {
-            this.searchTermsRegExp.push(new RegExp(`\\b(${word})\\b`, 'gi'));
-          }
-        }
-      }
-
-      this.searchIndexesData = e.data.loadedResults;
-      this.searchIndexesCurrentIndex = -1;
-
-      this.loadNextSectionid();
+    if (e.data.stemInfo?.length > 0) {
+      this.searchType = 'OR';
+      this.searchTermsRegExp = this.buildStemRegexps(e.data.stemInfo);
     }
+
+    this.searchIndexesData = e.data.loadedResults;
+    this.searchIndexesCurrentIndex = -1;
+    this.loadNextSectionid();
   }
 
   loadNextSectionid() {

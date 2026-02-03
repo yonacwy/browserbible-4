@@ -27,14 +27,7 @@ export class MainMenu {
 
     for (const [name, ComponentClass] of allComponents) {
       try {
-        // Support both class constructors and factory functions
-        const isClass = ComponentClass.prototype && ComponentClass.prototype.constructor === ComponentClass;
-        let component;
-        if (isClass) {
-          component = new ComponentClass(this.menuContainer, this);
-        } else {
-          component = ComponentClass(this.menuContainer, this);
-        }
+        const component = new ComponentClass(this.menuContainer, this);
 
         if (component) {
           this.components.push(component);

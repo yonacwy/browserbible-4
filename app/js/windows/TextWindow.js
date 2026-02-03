@@ -370,15 +370,12 @@ export class TextWindowComponent extends BaseWindow {
   }
 
   setTextInfoUI(textinfo) {
-    switch (textinfo.type) {
-      default:
-        this.refs.textlistui.classList.remove('app-list-image');
-        this.refs.textlistui.innerHTML = textinfo.abbr;
-        break;
-      case 'deafbible':
-        this.refs.textlistui.classList.add('app-list-image');
-        this.refs.textlistui.innerHTML = `<img src="content/texts/${textinfo.id}/${textinfo.id}.png" />`;
-        break;
+    if (textinfo.type === 'deafbible') {
+      this.refs.textlistui.classList.add('app-list-image');
+      this.refs.textlistui.innerHTML = `<img src="content/texts/${textinfo.id}/${textinfo.id}.png" />`;
+    } else {
+      this.refs.textlistui.classList.remove('app-list-image');
+      this.refs.textlistui.innerHTML = textinfo.abbr;
     }
   }
 

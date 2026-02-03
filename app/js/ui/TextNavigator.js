@@ -106,6 +106,39 @@ export function TextNavigator() {
     }
   }
 
+  function applyDivisionAttrs(divsEl) {
+    if (!divsEl) return;
+    divsEl.style.display = '';
+    if (textInfo.dir) divsEl.setAttribute('dir', textInfo.dir);
+    if (textInfo.lang) divsEl.setAttribute('lang', textInfo.lang);
+  }
+
+  function selectCurrentReference(fragmentid) {
+    if (!fragmentid) return;
+    const sectionid = fragmentid.split('_')[0];
+    const divisionid = sectionid.substring(0, 2);
+    const divisionNode = changer.querySelector('.divisionid-' + divisionid);
+    if (!divisionNode) return;
+
+    divisionNode.classList.add('selected');
+    const divsContainer = changer.querySelector('.text-navigator-divisions');
+    if (divsContainer) divsContainer.scrollTop = divisionNode.offsetTop - 40;
+
+    renderSections(false);
+    const sectionNode = divisionNode.querySelector('.section-' + sectionid);
+    if (sectionNode) sectionNode.classList.add('selected');
+  }
+
+  function showBibleNav() {
+    const textInputValue = target?.value ?? '';
+    const biblereference = Reference(textInputValue);
+    const fragmentid = biblereference ? biblereference.toSection() : null;
+
+    renderDivisions();
+    applyDivisionAttrs(changer.querySelector('.text-navigator-divisions'));
+    selectCurrentReference(fragmentid);
+  }
+
   function show() {
     if (textInfo == null) {
       console.warn('navigator has no textInfo!');
@@ -121,50 +154,15 @@ export function TextNavigator() {
     const divisions = changer.querySelector('.text-navigator-divisions');
     if (divisions) divisions.scrollTop = 0;
 
-    const textType = textInfo.type ? textInfo.type.toLowerCase() : 'bible';
+    const textType = (textInfo.type || 'bible').toLowerCase();
+    const isBibleType = ['bible', 'deafbible', 'videobible', 'commentary'].includes(textType);
 
-    switch (textType) {
-      case 'bible':
-      case 'deafbible':
-      case 'videobible':
-      case 'commentary':
-        const textInputValue = target?.value ?? '';
-        const biblereference = Reference(textInputValue);
-        const fragmentid = biblereference ? biblereference.toSection() : null;
-
-        renderDivisions();
-        let divsEl = changer.querySelector('.text-navigator-divisions');
-        if (divsEl) {
-          divsEl.style.display = '';
-          if (textInfo.dir) divsEl.setAttribute('dir', textInfo.dir);
-          if (textInfo.lang) divsEl.setAttribute('lang', textInfo.lang);
-        }
-
-        if (fragmentid) {
-          const parts = fragmentid.split('_');
-          const sectionid = parts[0];
-          const divisionid = sectionid.substring(0, 2);
-
-          const divisionNode = changer.querySelector('.divisionid-' + divisionid);
-          if (divisionNode) {
-            divisionNode.classList.add('selected');
-            const offsetVal = divisionNode.offsetTop;
-            const divsContainer = changer.querySelector('.text-navigator-divisions');
-            if (divsContainer) divsContainer.scrollTop = offsetVal - 40;
-
-            renderSections(false);
-
-            const sectionNode = divisionNode.querySelector('.section-' + sectionid);
-            if (sectionNode) sectionNode.classList.add('selected');
-          }
-        }
-        break;
-
-      case 'book':
-        renderSections();
-        divsEl = changer.querySelector('.text-navigator-divisions');
-        if (divsEl) divsEl.style.display = 'none';
-        break;
+    if (isBibleType) {
+      showBibleNav();
+    } else if (textType === 'book') {
+      renderSections();
+      const divsEl = changer.querySelector('.text-navigator-divisions');
+      if (divsEl) divsEl.style.display = 'none';
     }
   }
 
@@ -172,47 +170,46 @@ export function TextNavigator() {
     return BOOK_DATA[bookid] ? BOOK_DATA[bookid].section : '';
   }
 
+  function getDisplayName(divisionName, divisionAbbr) {
+    if (fullBookMode) return divisionName;
+    const source = divisionAbbr ?? divisionName ?? '';
+    return source.replace(/\s/i, '').substring(0, 3);
+  }
+
+  function buildDivisionHtml(divisionid, divisionName, displayName) {
+    const chapters = textInfo.sections.filter(c => c.substring(0, 2) === divisionid);
+    return '<div class="text-navigator-division divisionid-' + divisionid +
+      ' division-section-' + getBookSectionClass(divisionid) +
+      '" data-id="' + divisionid +
+      '" data-chapters="' + chapters.join(',') +
+      '" data-name="' + divisionName + '"><span>' + displayName + '</span></div>';
+  }
+
   function renderDivisions() {
     const html = [];
-    let hasPrintedOt = false;
-    let hasPrintedNt = false;
-
+    const printed = { ot: false, nt: false };
     fullBookMode = true;
 
-    let divsEl = changer.querySelector('.text-navigator-divisions');
-    if (fullBookMode) {
-      if (divsEl) divsEl.classList.add('text-navigator-divisions-full');
-    } else if (divsEl) {
-      divsEl.classList.remove('text-navigator-divisions-full');
-    }
+    const divsEl = changer.querySelector('.text-navigator-divisions');
+    if (divsEl) divsEl.classList.toggle('text-navigator-divisions-full', fullBookMode);
 
-    for (let i = 0, il = textInfo.divisions.length; i < il; i++) {
+    for (let i = 0; i < textInfo.divisions.length; i++) {
       const divisionid = textInfo.divisions[i];
-      const divisionName = textInfo.divisionNames ? textInfo.divisionNames[i] : null;
-      const divisionAbbr = textInfo.divisionAbbreviations ? textInfo.divisionAbbreviations[i] : null;
-      const displayName = fullBookMode ? divisionName :
-        (divisionAbbr != null ? divisionAbbr.replace(/\s/i, '').substring(0, 3) :
-          (divisionName ? divisionName.replace(/\s/i, '').substring(0, 3) : ''));
-      const book = BOOK_DATA[divisionid];
+      if (!BOOK_DATA[divisionid]) continue;
 
-      if (typeof book === 'undefined') continue;
+      const divisionName = textInfo.divisionNames?.[i] ?? null;
+      const divisionAbbr = textInfo.divisionAbbreviations?.[i] ?? null;
 
-      if (OT_BOOKS.indexOf(divisionid) > -1 && !hasPrintedOt) {
+      if (OT_BOOKS.includes(divisionid) && !printed.ot) {
         html.push('<div class="text-navigator-division-header">' + i18n.t('windows.bible.ot') + '</div>');
-        hasPrintedOt = true;
+        printed.ot = true;
       }
-      if (NT_BOOKS.indexOf(divisionid) > -1 && !hasPrintedNt) {
+      if (NT_BOOKS.includes(divisionid) && !printed.nt) {
         html.push('<div class="text-navigator-division-header">' + i18n.t('windows.bible.nt') + '</div>');
-        hasPrintedNt = true;
+        printed.nt = true;
       }
 
-      const chapters = textInfo.sections.filter(c => c.substring(0, 2) === divisionid);
-
-      html.push('<div class="text-navigator-division divisionid-' + divisionid +
-        ' division-section-' + getBookSectionClass(divisionid) +
-        '" data-id="' + divisionid +
-        '" data-chapters="' + chapters.join(',') +
-        '" data-name="' + divisionName + '"><span>' + displayName + '</span></div>');
+      html.push(buildDivisionHtml(divisionid, divisionName, getDisplayName(divisionName, divisionAbbr)));
     }
 
     if (divsEl) {
@@ -220,8 +217,7 @@ export function TextNavigator() {
       divsEl.style.display = '';
     }
 
-    const existingSections = changer.querySelectorAll('.text-navigator-sections');
-    existingSections.forEach(el => el.parentNode.removeChild(el));
+    changer.querySelectorAll('.text-navigator-sections').forEach(el => el.remove());
   }
 
   // Click a division (Bible book)
@@ -262,56 +258,50 @@ export function TextNavigator() {
     renderSections(true);
   });
 
+  function buildChapterHtml(chapters) {
+    const numbers = textInfo.numbers ?? bibleNumbers.default;
+    return chapters.map(code => {
+      const num = parseInt(code.substring(2));
+      return '<span class="text-navigator-section section-' + code + '" data-id="' + code + '">' + numbers[num] + '</span>';
+    }).join('');
+  }
+
+  function insertSectionNodes(selectedDiv, sectionNodes, animated) {
+    const spanEl = selectedDiv?.querySelector('span');
+    if (spanEl) spanEl.parentNode.insertBefore(sectionNodes, spanEl.nextSibling);
+
+    const isLast = selectedDiv && !selectedDiv.nextElementSibling;
+    if (animated && !isLast) {
+      slideDown(sectionNodes);
+    } else {
+      sectionNodes.style.display = '';
+      if (isLast) {
+        const divisionsEl = changer.querySelector('.text-navigator-divisions');
+        if (divisionsEl) divisionsEl.scrollTop += 500;
+      }
+    }
+  }
+
+  function renderBibleSections(animated) {
+    const selectedDiv = changer.querySelector('.text-navigator-division.selected');
+    const divisionname = selectedDiv?.getAttribute('data-name') ?? null;
+    const chapters = selectedDiv?.getAttribute('data-chapters')?.split(',') ?? [];
+
+    title.innerHTML = divisionname;
+    const html = buildChapterHtml(chapters);
+    const sectionNodes = createElements('<div class="text-navigator-sections" style="display:none;">' + html + '</div>');
+    insertSectionNodes(selectedDiv, sectionNodes, animated);
+  }
+
   function renderSections(animated) {
-    const html = [];
-    const textType = textInfo.type ? textInfo.type.toLowerCase() : 'bible';
+    const textType = (textInfo.type || 'bible').toLowerCase();
+    const isBibleType = ['bible', 'deafbible', 'videobible', 'commentary'].includes(textType);
 
-    switch (textType) {
-      case 'bible':
-      case 'deafbible':
-      case 'videobible':
-      case 'commentary':
-        const selected_division = changer.querySelector('.text-navigator-division.selected');
-        const isLast = selected_division ? !selected_division.nextElementSibling : false;
-        const divisionname = selected_division ? selected_division.getAttribute('data-name') : null;
-        const chapters = selected_division ? selected_division.getAttribute('data-chapters').split(',') : [];
-        const numbers = typeof textInfo.numbers !== 'undefined' ? textInfo.numbers : bibleNumbers.default;
-
-        title.innerHTML = divisionname;
-
-        for (let chapter = 0; chapter < chapters.length; chapter++) {
-          const dbsChapterCode = chapters[chapter];
-          const chapterNumber = parseInt(dbsChapterCode.substring(2));
-          html.push('<span class="text-navigator-section section-' + dbsChapterCode +
-            '" data-id="' + dbsChapterCode + '">' + numbers[chapterNumber].toString() + '</span>');
-        }
-
-        const sectionNodes = createElements('<div class="text-navigator-sections" style="display:none;">' + html.join('') + '</div>');
-
-        if (selected_division) {
-          const spanEl = selected_division.querySelector('span');
-          if (spanEl) {
-            spanEl.parentNode.insertBefore(sectionNodes, spanEl.nextSibling);
-          }
-        }
-
-        if (animated === true && !isLast) {
-          slideDown(sectionNodes);
-        } else {
-          sectionNodes.style.display = '';
-          if (isLast) {
-            const divisionsEl = changer.querySelector('.text-navigator-divisions');
-            if (divisionsEl) divisionsEl.scrollTop = divisionsEl.scrollTop + 500;
-          }
-        }
-        break;
-
-      case 'book':
-        for (let i = 0, il = textInfo.sections.length; i < il; i++) {
-          const sectionid = textInfo.sections[i];
-          html.push('<span class="text-navigator-section" data-id="' + sectionid + '">' + sectionid.replace('P', '') + '</span>');
-        }
-        break;
+    if (isBibleType) {
+      renderBibleSections(animated);
+    } else if (textType === 'book') {
+      
+      // Note: book type doesn't insert into DOM here, used elsewhere
     }
   }
 

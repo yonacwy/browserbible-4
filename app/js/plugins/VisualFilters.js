@@ -36,6 +36,27 @@ const applyStyle = (node, css) => {
 };
 
 /**
+ * Check if a word matches a transform's criteria
+ */
+const matchesTransform = (word, transform) => {
+  if (!transform.active) return false;
+
+  // Strong's number check
+  if (transform.strongs !== '') {
+    if (word.getAttribute('s') !== transform.strongs) return false;
+  }
+
+  // Morphology check
+  if (transform.morph !== '' && transform.morphRegExp?.test) {
+    const wordMorphData = word.getAttribute('m');
+    if (wordMorphData == null || !transform.morphRegExp.test(wordMorphData)) return false;
+  }
+
+  // Must have at least one filter criteria
+  return transform.strongs !== '' || transform.morph !== '';
+};
+
+/**
  * Visual Transformer - applies style transforms to text
  */
 const VisualTransformer = {
@@ -52,37 +73,9 @@ const VisualTransformer = {
   runTransforms(sectionNode, visualSettings) {
     if (visualSettings.transforms.length === 0) return;
 
-    const sectionEl = sectionNode;
-
-    sectionEl.querySelectorAll('l').forEach(word => {
+    sectionNode.querySelectorAll('l').forEach(word => {
       for (const transform of visualSettings.transforms) {
-        let isMatch = false;
-
-        if (!transform.active) continue;
-
-        // Strong's number
-        if (transform.strongs !== '') {
-          if (word.getAttribute('s') === transform.strongs) {
-            isMatch = true;
-          } else {
-            continue;
-          }
-        }
-
-        // Morphology
-        if (transform.morph !== '') {
-          if (transform.morphRegExp?.test) {
-            const wordMorphData = word.getAttribute('m');
-
-            if (wordMorphData != null && transform.morphRegExp.test(wordMorphData)) {
-              isMatch = true;
-            } else {
-              continue;
-            }
-          }
-        }
-
-        if (isMatch) {
+        if (matchesTransform(word, transform)) {
           applyStyle(word, transform.style);
         }
       }
@@ -368,43 +361,35 @@ const MorphologySelector = () => {
     drawPartsOfSpeech();
   };
 
+  const selectOnly = (span) => {
+    span.classList.add('selected');
+    [...span.parentElement.children].filter(s => s !== span).forEach(s => s.classList.remove('selected'));
+  };
+
+  const selectRemainderLetters = (remainder) => {
+    for (let i = 0; i < remainder.length; i++) {
+      const td = morphSelectorMainRow.querySelector(`td:nth-child(${i + 2})`);
+      const letterSpan = td?.querySelector(`span[data-value="${remainder[i]}"]`);
+      if (letterSpan) letterSpan.classList.add('selected');
+    }
+  };
+
   const updateMorphSelector = (value) => {
     if (value.length === 0) {
-      morphSelector.querySelectorAll('span').forEach(span => {
-        span.classList.remove('selected');
-      });
+      morphSelector.querySelectorAll('span').forEach(span => span.classList.remove('selected'));
       drawSelectedPartOfSpeech();
       return;
     }
 
-    const firstChar = value.substring(0, 1);
-    const partOfSpeechSpan = morphSelectorPOS.querySelector(`span[data-value="${firstChar}"]`);
+    const partOfSpeechSpan = morphSelectorPOS.querySelector(`span[data-value="${value[0]}"]`);
+    if (!partOfSpeechSpan) return;
 
-    if (partOfSpeechSpan) {
-      partOfSpeechSpan.classList.add('selected');
-      [...partOfSpeechSpan.parentElement.children].filter(s => s !== partOfSpeechSpan).forEach(sibling => {
-        sibling.classList.remove('selected');
-      });
+    selectOnly(partOfSpeechSpan);
+    drawSelectedPartOfSpeech();
 
-      drawSelectedPartOfSpeech();
-
-      if (value.length > 1) {
-        let remainder = value.substr(1);
-        if (remainder.substr(0, 1) === '-') {
-          remainder = remainder.substr(1);
-        }
-
-        for (let i = 0; i < remainder.length; i++) {
-          const letter = remainder[i];
-          const td = morphSelectorMainRow.querySelector(`td:nth-child(${i + 2})`);
-          if (td) {
-            const letterSpan = td.querySelector(`span[data-value="${letter}"]`);
-            if (letterSpan) {
-              letterSpan.classList.add('selected');
-            }
-          }
-        }
-      }
+    if (value.length > 1) {
+      const remainder = value.substring(1).replace(/^-/, '');
+      selectRemainderLetters(remainder);
     }
   };
 

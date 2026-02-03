@@ -10,6 +10,38 @@ import ArclightApi, { JesusFilmMediaApi } from './ArclightApi.js';
 export const JesusFilmApi = ArclightApi;
 export { ArclightApi, JesusFilmMediaApi };
 
+const fetchLibraryInfo = (library, baseUrl) => {
+  let infoUrl;
+  if (library.infoUrl) {
+    infoUrl = library.infoUrl;
+  } else if (library.baseUrl) {
+    infoUrl = `content/media/${library.folder}/info.json`;
+  } else {
+    infoUrl = `${baseUrl}content/media/${library.folder}/info.json`;
+  }
+  return fetch(infoUrl)
+    .then(response => {
+      if (!response.ok) {
+        console.warn(`Failed to load info.json for ${library.folder}`);
+        return null;
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data) {
+        return {
+          ...library,
+          data: data
+        };
+      }
+      return null;
+    })
+    .catch(err => {
+      console.warn(`Error loading ${library.folder}/info.json:`, err);
+      return null;
+    });
+};
+
 export const MediaLibrary = (() => {
   let mediaLibraries = null;
   let isLoading = false;
@@ -36,38 +68,7 @@ export const MediaLibrary = (() => {
       })
       .then(mediaConfig => {
         const libraries = mediaConfig.media || [];
-        const loadPromises = libraries.map(library => {
-          let infoUrl;
-          if (library.infoUrl) {
-            infoUrl = library.infoUrl;
-          } else if (library.baseUrl) {
-            infoUrl = `content/media/${library.folder}/info.json`;
-          } else {
-            infoUrl = `${baseUrl}content/media/${library.folder}/info.json`;
-          }
-          return fetch(infoUrl)
-            .then(response => {
-              if (!response.ok) {
-                console.warn(`Failed to load info.json for ${library.folder}`);
-                return null;
-              }
-              return response.json();
-            })
-            .then(data => {
-              if (data) {
-                return {
-                  ...library,
-                  data: data
-                };
-              }
-              return null;
-            })
-            .catch(err => {
-              console.warn(`Error loading ${library.folder}/info.json:`, err);
-              return null;
-            });
-        });
-
+        const loadPromises = libraries.map(library => fetchLibraryInfo(library, baseUrl));
         return Promise.all(loadPromises);
       })
       .then(results => {

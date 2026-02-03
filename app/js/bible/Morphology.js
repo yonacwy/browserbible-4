@@ -9,103 +9,55 @@ export const robinson = {
     const partOfSpeechKey = (firstDash > -1) ? morph.substring(0, firstDash) : morph;
     const partOfSpeech = this.partsOfSpeech[partOfSpeechKey.toUpperCase()];
     const parsingInfo = (firstDash > -1) ? morph.substring(firstDash + 1) : '';
-    let formattedParsing = '';
 
-    switch (partOfSpeechKey.toUpperCase()) {
-      case 'T':
-      case 'N':
-      case 'R':
-      case 'C':
-      case 'D':
-      case 'K':
-      case 'I':
-      case 'X':
-      case 'Q':
-      case 'F':
-      case 'S': {
-        const c = this.nounCases[parsingInfo.substring(0, 1)];
-        const n = this.wordNumber[parsingInfo.substring(1, 2)];
-        const g = this.wordGender[parsingInfo.substring(2, 3)];
-        const parts = [c];
-        if (n) {
-          parts.push(n);
-          if (g) parts.push(g);
-        }
-        formattedParsing = parts.join(', ');
-        break;
-      }
+    const parser = this.parsers[partOfSpeechKey.toUpperCase()];
+    const formattedParsing = parser ? parser.call(this, parsingInfo) : parsingInfo;
 
-      case 'P': {
-        const firstLetter = parsingInfo.substr(0, 1);
-        if (firstLetter === '1' || firstLetter === '2') {
-          const p = this.wordPerson[parsingInfo.substring(0, 1)];
-          const c = this.nounCases[parsingInfo.substring(1, 2)];
-          const n = this.wordNumber[parsingInfo.substring(2, 3)];
-          const parts = [p];
-          if (c) {
-            parts.push(c);
-            if (n) parts.push(n);
-          }
-          formattedParsing = parts.join(', ');
-        } else {
-          const c = this.nounCases[parsingInfo.substring(0, 1)];
-          const n = this.wordNumber[parsingInfo.substring(1, 2)];
-          const g = this.wordGender[parsingInfo.substring(2, 3)];
-          const parts = [c];
-          if (n) {
-            parts.push(n);
-            if (g) parts.push(g);
-          }
-          formattedParsing = parts.join(', ');
-        }
-        break;
-      }
-
-      case 'A': {
-        const c = this.nounCases[parsingInfo.substring(0, 1)];
-        const n = this.wordNumber[parsingInfo.substring(1, 2)];
-        formattedParsing = `${c}, ${n}`;
-        break;
-      }
-
-      case 'PRT':
-        formattedParsing = this.particleTypes[parsingInfo];
-        break;
-
-      case 'V': {
-        let t = '';
-        let rem = '';
-        if (parsingInfo.substring(0, 1) === '2') {
-          t = this.verbTenses[parsingInfo.substring(0, 2)];
-          rem = parsingInfo.substring(2);
-        } else {
-          t = this.verbTenses[parsingInfo.substring(0, 1)];
-          rem = parsingInfo.substring(1);
-        }
-        const v = this.verbVoices[rem.substring(0, 1)];
-        const m = this.verbMoods[rem.substring(1, 2)];
-
-        if (rem.length === 2) {
-          formattedParsing = `${t}, ${v}, ${m}`;
-        } else if (rem.length === 5) {
-          const p = this.wordPerson[rem.substring(3, 4)];
-          const n = this.wordNumber[rem.substring(4, 5)];
-          formattedParsing = `${t}, ${v}, ${m}, ${p}, ${n}`;
-        } else if (rem.length === 6) {
-          const c = this.nounCases[rem.substring(3, 4)];
-          const n = this.wordNumber[rem.substring(4, 5)];
-          const g = this.wordGender[rem.substring(5, 6)];
-          formattedParsing = `${t}, ${v}, ${m}, ${c}, ${n}, ${g}`;
-        }
-        break;
-      }
-
-      default:
-        formattedParsing = parsingInfo;
-    }
-
-    return (partOfSpeech !== undefined ? `${partOfSpeech}${formattedParsing !== '' ? ': ' : ''}` : '') + formattedParsing;
+    if (partOfSpeech === undefined) return formattedParsing;
+    const separator = formattedParsing !== '' ? ': ' : '';
+    return `${partOfSpeech}${separator}${formattedParsing}`;
   },
+
+  parseNounLike(info) {
+    const c = this.nounCases[info.substring(0, 1)];
+    const n = this.wordNumber[info.substring(1, 2)];
+    const g = this.wordGender[info.substring(2, 3)];
+    const parts = [c];
+    if (n) { parts.push(n); if (g) parts.push(g); }
+    return parts.join(', ');
+  },
+
+  parsePronoun(info) {
+    const first = info.substr(0, 1);
+    if (first === '1' || first === '2') {
+      const p = this.wordPerson[info.substring(0, 1)];
+      const c = this.nounCases[info.substring(1, 2)];
+      const n = this.wordNumber[info.substring(2, 3)];
+      const parts = [p];
+      if (c) { parts.push(c); if (n) parts.push(n); }
+      return parts.join(', ');
+    }
+    return this.parseNounLike(info);
+  },
+
+  parseAdjective(info) {
+    return `${this.nounCases[info.substring(0, 1)]}, ${this.wordNumber[info.substring(1, 2)]}`;
+  },
+
+  parseVerb(info) {
+    const hasTwoCharTense = info.substring(0, 1) === '2';
+    const t = hasTwoCharTense ? this.verbTenses[info.substring(0, 2)] : this.verbTenses[info.substring(0, 1)];
+    const rem = info.substring(hasTwoCharTense ? 2 : 1);
+    const v = this.verbVoices[rem.substring(0, 1)];
+    const m = this.verbMoods[rem.substring(1, 2)];
+
+    if (rem.length === 2) return `${t}, ${v}, ${m}`;
+    if (rem.length === 5) return `${t}, ${v}, ${m}, ${this.wordPerson[rem.substring(3, 4)]}, ${this.wordNumber[rem.substring(4, 5)]}`;
+    if (rem.length === 6) return `${t}, ${v}, ${m}, ${this.nounCases[rem.substring(3, 4)]}, ${this.wordNumber[rem.substring(4, 5)]}, ${this.wordGender[rem.substring(5, 6)]}`;
+    return '';
+  },
+
+  parsers: null,
 
   partsOfSpeech: {
     N: 'noun', A: 'adjective', T: 'article', V: 'verb',
@@ -129,6 +81,18 @@ export const robinson = {
   verbVoices: { 'A': 'active', 'M': 'middle', 'P': 'passive', 'E': 'middle or passive', 'D': 'middle deponent', 'O': 'passive deponent', 'N': 'middle or passive deponent', 'Q': 'impersonal active', 'X': 'no voice' },
   verbMoods: { 'I': 'indicative', 'S': 'subjunctive', 'O': 'optative', 'M': 'imperative', 'N': 'infinitive', 'P': 'participle', 'R': 'imperative participle' },
   particleTypes: { 'I': 'interogative', 'N': 'negative' }
+};
+
+// Initialize parsers lookup (maps part-of-speech keys to parser methods)
+robinson.parsers = {
+  T: robinson.parseNounLike, N: robinson.parseNounLike, R: robinson.parseNounLike,
+  C: robinson.parseNounLike, D: robinson.parseNounLike, K: robinson.parseNounLike,
+  I: robinson.parseNounLike, X: robinson.parseNounLike, Q: robinson.parseNounLike,
+  F: robinson.parseNounLike, S: robinson.parseNounLike,
+  P: robinson.parsePronoun,
+  A: robinson.parseAdjective,
+  V: robinson.parseVerb,
+  PRT: (info) => robinson.particleTypes[info]
 };
 
 export const OSHB = {
@@ -163,7 +127,9 @@ export const OSHB = {
         }
       }
 
-      formattedParts.push(`${i > 0 ? '; ' : ''}${partOfSpeech}${details.length > 0 ? `: ${details.join(', ')}` : ''}`);
+      const prefix = i > 0 ? '; ' : '';
+      const detailsStr = details.length > 0 ? ': ' + details.join(', ') : '';
+      formattedParts.push(prefix + partOfSpeech + detailsStr);
     }
 
     return formattedParts.join('');

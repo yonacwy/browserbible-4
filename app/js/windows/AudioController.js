@@ -412,6 +412,64 @@ export function AudioController(id, container, toggleButton, scroller) {
     audio.currentTime = newTime;
   }, false);
 
+  const configureFcbhDramaOptions = (info) => {
+    optionsDramaticBox.style.display = '';
+
+    const hasNonDrama =
+      (info.fcbh_audio_nt !== undefined && info.fcbh_audio_nt != '') ||
+      (info.fcbh_audio_ot !== undefined && info.fcbh_audio_ot != '');
+    const hasDrama =
+      (info.fcbh_drama_nt !== undefined && info.fcbh_drama_nt != '') ||
+      (info.fcbh_drama_ot !== undefined && info.fcbh_drama_ot != '');
+
+    const hasBoth = hasNonDrama && hasDrama;
+    optionsDramaticAudio.disabled = !hasBoth;
+    optionsDramaticDrama.disabled = !hasBoth;
+    optionsDramaticAudio.checked = hasNonDrama;
+    optionsDramaticDrama.checked = !hasNonDrama;
+  };
+
+  const initializeAudioPlayback = () => {
+    if (fragmentid != '') {
+      const newFragmentid = fragmentid;
+      fragmentid = '';
+      loadAudio(newFragmentid);
+      return;
+    }
+    locationInfo = scroller.getLocationInfo();
+    if (locationInfo != null) {
+      loadAudio(locationInfo.fragmentid);
+    }
+  };
+
+  const handleAudioInfoResult = (newAudioInfo) => {
+    if (newAudioInfo == null) {
+      hasAudio = false;
+      if (toggleButtonEl) {
+        toggleButtonEl.style.display = 'none';
+        block.style.display = 'none';
+      }
+      ext.trigger('audioavailable', { type: 'audioavailable', data: { hasAudio: false } });
+      return;
+    }
+
+    audioInfo = newAudioInfo;
+    hasAudio = true;
+    sectionid = '';
+    fragmentAudioData = null;
+
+    if (audioInfo.type == 'local') {
+      optionsDramaticBox.style.display = 'none';
+    } else if (audioInfo.type == 'fcbh') {
+      configureFcbhDramaOptions(audioInfo);
+    }
+
+    initializeAudioPlayback();
+
+    if (toggleButtonEl) toggleButtonEl.style.display = '';
+    ext.trigger('audioavailable', { type: 'audioavailable', data: { hasAudio: true } });
+  };
+
   const setTextInfo = (newTextInfo) => {
     if (textInfo == null || textInfo.id != newTextInfo.id) {
       title.innerHTML = '';
@@ -433,67 +491,7 @@ export function AudioController(id, container, toggleButton, scroller) {
       }
 
       if (textInfo.type == 'bible') {
-        audioDataManager.getAudioInfo(textInfo, (newAudioInfo) => {
-          if (newAudioInfo != null) {
-            audioInfo = newAudioInfo;
-            hasAudio = true;
-            sectionid = '';
-            fragmentAudioData = null;
-
-            if (audioInfo.type == 'local') {
-              optionsDramaticBox.style.display = 'none';
-            } else if (audioInfo.type == 'fcbh') {
-              optionsDramaticBox.style.display = '';
-
-              const hasNonDrama =
-                (audioInfo.fcbh_audio_nt !== undefined && audioInfo.fcbh_audio_nt != '') ||
-                (audioInfo.fcbh_audio_ot !== undefined && audioInfo.fcbh_audio_ot != '');
-              const hasDrama =
-                (audioInfo.fcbh_drama_nt !== undefined && audioInfo.fcbh_drama_nt != '') ||
-                (audioInfo.fcbh_drama_ot !== undefined && audioInfo.fcbh_drama_ot != '');
-
-              if (hasNonDrama && hasDrama) {
-                optionsDramaticAudio.disabled = false;
-                optionsDramaticDrama.disabled = false;
-              } else {
-                optionsDramaticAudio.disabled = true;
-                optionsDramaticDrama.disabled = true;
-              }
-
-              if (hasNonDrama) {
-                optionsDramaticAudio.checked = true;
-                optionsDramaticDrama.checked = false;
-              } else {
-                optionsDramaticAudio.checked = false;
-                optionsDramaticDrama.checked = true;
-              }
-            }
-
-            if (fragmentid != '') {
-              const newFragmentid = fragmentid;
-              fragmentid = '';
-              loadAudio(newFragmentid);
-            } else {
-              locationInfo = scroller.getLocationInfo();
-              if (locationInfo != null) {
-                loadAudio(locationInfo.fragmentid);
-              }
-            }
-
-            if (toggleButtonEl) toggleButtonEl.style.display = '';
-
-            ext.trigger('audioavailable', { type: 'audioavailable', data: { hasAudio: true } });
-          } else {
-            hasAudio = false;
-
-            if (toggleButtonEl) {
-              toggleButtonEl.style.display = 'none';
-              block.style.display = 'none';
-            }
-
-            ext.trigger('audioavailable', { type: 'audioavailable', data: { hasAudio: false } });
-          }
-        });
+        audioDataManager.getAudioInfo(textInfo, handleAudioInfoResult);
       }
     }
   };

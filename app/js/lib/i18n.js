@@ -46,6 +46,28 @@ function getNestedValue(obj, path) {
   return current;
 }
 
+function interpolate(str, options) {
+  if (!options) return str;
+
+  if (options.count !== undefined) {
+    str = str.replace(/__count__/g, options.count);
+  }
+
+  if (Array.isArray(options)) {
+    for (let i = 0; i < options.length; i++) {
+      str = str.replace(new RegExp('\\{' + i + '\\}', 'g'), options[i]);
+    }
+    return str;
+  }
+
+  for (const prop in options) {
+    if (Object.hasOwn(options, prop)) {
+      str = str.replace(new RegExp('\\{' + prop + '\\}', 'g'), options[prop]);
+    }
+  }
+  return str;
+}
+
 export function t(key, options) {
   let translation = getNestedValue(resources, currentLanguage + '.translation.' + key);
 
@@ -53,29 +75,9 @@ export function t(key, options) {
     translation = getNestedValue(resources, fallbackLanguage + '.translation.' + key);
   }
 
-  if (translation === undefined) {
-    return key;
-  }
+  if (translation === undefined) return key;
 
-  if (options) {
-    if (options.count !== undefined) {
-      translation = translation.replace(/__count__/g, options.count);
-    }
-
-    if (Array.isArray(options)) {
-      for (let i = 0; i < options.length; i++) {
-        translation = translation.replace(new RegExp('\\{' + i + '\\}', 'g'), options[i]);
-      }
-    } else {
-      for (const prop in options) {
-        if (Object.hasOwn(options, prop)) {
-          translation = translation.replace(new RegExp('\\{' + prop + '\\}', 'g'), options[prop]);
-        }
-      }
-    }
-  }
-
-  return translation;
+  return interpolate(translation, options);
 }
 
 export function lng() {

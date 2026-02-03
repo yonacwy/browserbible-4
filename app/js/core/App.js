@@ -148,52 +148,35 @@ export class App {
 
   _getWindowSettings() {
     const config = getConfig();
-
-    let settings = {
-      windows: config.windows
-    };
-
+    let settings = { windows: config.windows };
     settings = AppSettings.getValue(this.settingsKey, settings);
 
     const queryData = Object.fromEntries(new URLSearchParams(window.location.search));
-    if (queryData.w1) {
-      const tempSettings = [];
-      const allWindowTypes = getAllWindowTypes();
+    if (!queryData.w1) return settings;
 
-      for (let i = 1; i <= 4; i++) {
-        const winTypeName = queryData[`w${i}`];
-        const winTypeInfo = allWindowTypes.find(wt => wt.param === winTypeName);
-        const winTypeParamKeys = winTypeInfo ? Object.keys(winTypeInfo.paramKeys ?? {}) : [];
+    const allWindowTypes = getAllWindowTypes();
+    const tempSettings = [];
 
-        const setting = {
-          type: winTypeName,
-          data: {}
-        };
+    for (let i = 1; i <= 4; i++) {
+      const winTypeName = queryData[`w${i}`];
+      if (!winTypeName) continue;
 
-        if (winTypeName) {
-          for (const q in queryData) {
-            const key = q.substring(0, q.length - 1);
-            const number = q.substring(q.length - 1);
-            const value = queryData[q];
+      const winTypeInfo = allWindowTypes.find(wt => wt.param === winTypeName);
+      const paramKeys = winTypeInfo?.paramKeys ?? {};
+      const setting = { type: winTypeName, data: {} };
 
-            if (key !== 'w' && number === i.toString()) {
-              const longParamKey = winTypeParamKeys.find(lpk =>
-                key === (winTypeInfo.paramKeys[lpk] ?? lpk) || key === lpk
-              ) ?? key;
-
-              setting.data[longParamKey] = value;
-            }
-          }
-
-          tempSettings.push(setting);
-        }
+      const suffix = i.toString();
+      for (const [q, value] of Object.entries(queryData)) {
+        if (!q.endsWith(suffix) || q === `w${i}`) continue;
+        const key = q.slice(0, -1);
+        const longKey = Object.keys(paramKeys).find(k => key === (paramKeys[k] ?? k) || key === k) ?? key;
+        setting.data[longKey] = value;
       }
 
-      if (tempSettings.length > 0) {
-        settings.windows = tempSettings;
-      }
+      tempSettings.push(setting);
     }
 
+    if (tempSettings.length > 0) settings.windows = tempSettings;
     return settings;
   }
 
