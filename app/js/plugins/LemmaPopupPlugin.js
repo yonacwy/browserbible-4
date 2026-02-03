@@ -3,13 +3,70 @@
  * Shows popup with Strong's number details when clicking on words
  */
 
-import { on, closest, toElement } from '../lib/helpers.esm.js';
 import { getConfig } from '../core/config.js';
 import { getApp } from '../core/registry.js';
 import { i18n } from '../lib/i18n.js';
 import { InfoWindow } from '../ui/InfoWindow.js';
-import { NT_BOOKS, OT_BOOKS, AP_BOOKS } from '../bible/BibleData.js';
+import { OT_BOOKS } from '../bible/BibleData.js';
 import { morphology } from '../bible/Morphology.js';
+
+// Article Strong's numbers to filter out when multiple words present
+const GREEK_ARTICLE = 3588;  // G3588 - the Greek definite article
+const HEBREW_ARTICLE = 853;  // H853 - the Hebrew direct object marker
+
+// Language configurations
+const GREEK_CONFIG = { langPrefix: 'G', langCode: 'el', dir: 'ltr', morphType: 'Greek' };
+const HEBREW_CONFIG = { langPrefix: 'H', langCode: 'he', dir: 'rtl', morphType: 'Hebrew' };
+
+const HEBREW_SECTION_LANGS = ['he', 'heb'];
+
+/**
+ * Determine language config based on section language or book ID
+ */
+function getLangConfig(sectionLang, bookId) {
+  if (HEBREW_SECTION_LANGS.includes(sectionLang) || OT_BOOKS.includes(bookId)) {
+    return HEBREW_CONFIG;
+  }
+  // Default to Greek for NT, Apocrypha, or Greek section languages
+  return GREEK_CONFIG;
+}
+
+/**
+ * Remove article from strongs/morphs arrays if present
+ * Returns true if article was removed
+ */
+function removeArticle(strongs, morphs, langPrefix) {
+  const articleNum = langPrefix === 'G' ? GREEK_ARTICLE : HEBREW_ARTICLE;
+  const articleIndex = strongs.indexOf(articleNum);
+
+  if (articleIndex > -1) {
+    strongs.splice(articleIndex, 1);
+    if (morphs.length > articleIndex) {
+      morphs.splice(articleIndex, 1);
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Parse strongs attribute into array of integers
+ */
+function parseStrongs(strongAttr) {
+  if (!strongAttr) return [];
+  return strongAttr
+    .replace(/[GH]/gi, '')
+    .split(' ')
+    .map(s => parseInt(s, 10))
+    .filter(n => !isNaN(n));
+}
+
+/**
+ * Parse morph attribute into array
+ */
+function parseMorphs(morphAttr) {
+  return morphAttr ? morphAttr.split(' ') : [];
+}
 
 /**
  * Create a lemma popup plugin
@@ -31,46 +88,64 @@ export function LemmaPopupPlugin(app) {
     });
   });
 
-  const containerEl = toElement(lemmaPopup.container);
+  const containerEl = lemmaPopup.container;
+  const bodyEl = lemmaPopup.body;
 
-  // Define loadStrongsData before it's used in the click handler
-  const loadStrongsData = (textid, strongsNumber, morphKey, morphType, langPrefix, langCode, dir, l) => {
-    fetch(`${config.baseContentUrl}content/lexicons/strongs/entries/${langPrefix}${strongsNumber}.json`)
+  /**
+   * Load and display Strong's data for a word
+   */
+  function loadStrongsData(opts) {
+    const { textid, strongsNumber, morphKey, langConfig, targetEl } = opts;
+    const url = `${config.baseContentUrl}content/lexicons/strongs/entries/${langConfig.langPrefix}${strongsNumber}.json`;
+
+    fetch(url)
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
       .then((data) => {
-        let html = `<div class="lemma-word">` +
-          `<span lang="${langCode}" dir="${dir}">${data.lemma}</span>` +
-          ` ` +
-          `<span class="lemma-strongs" dir="ltr"> (${strongsNumber})</span>` +
-          `</div>`;
-
-        if (morphKey !== '' && morphology[morphType]) {
-          html += `<span class="lemma-morphology">${morphology[morphType].format(morphKey)}</span>`;
-        }
-
-        html += `<span class="lemma-findall" data-lemma="${langPrefix}${strongsNumber}" data-textid="${textid}">` +
-          `${i18n.t('plugins.lemmapopup.findalloccurrences', { count: data.frequency })}` +
-          `</span>`;
-
-        html += `<div class="lemma-outline">${data.outline}</div>`;
-
-        const bodyEl = toElement(lemmaPopup.body);
+        const html = buildLemmaHtml({ data, strongsNumber, morphKey, langConfig, textid });
         bodyEl.classList.remove('loading-indicator');
         bodyEl.insertAdjacentHTML('beforeend', html);
-        lemmaPopup.position(l);
+        lemmaPopup.position(targetEl);
       })
       .catch(() => {
-        const bodyEl = toElement(lemmaPopup.body);
-        bodyEl.innerHTML = `Error loading ... ${langPrefix}${strongsNumber}`;
+        bodyEl.innerHTML = `Error loading ... ${langConfig.langPrefix}${strongsNumber}`;
       });
-  };
+  }
 
-  // Event handler that uses `this` - keep as regular function
-  on(containerEl, 'click', '.lemma-findall', function(e) {
-    const link = this;
+  /**
+   * Build HTML for lemma display
+   */
+  function buildLemmaHtml(opts) {
+    const { data, strongsNumber, morphKey, langConfig, textid } = opts;
+    const { langPrefix, langCode, dir, morphType } = langConfig;
+
+    let html = `<div class="lemma-word">` +
+      `<span lang="${langCode}" dir="${dir}">${data.lemma}</span> ` +
+      `<span class="lemma-strongs" dir="ltr">(${strongsNumber})</span>` +
+      `</div>`;
+
+    if (morphKey && morphology[morphType]) {
+      html += `<span class="lemma-morphology">${morphology[morphType].format(morphKey)}</span>`;
+    }
+
+    html += `<span class="lemma-findall" data-lemma="${langPrefix}${strongsNumber}" data-textid="${textid}">` +
+      `${i18n.t('plugins.lemmapopup.findalloccurrences', { count: data.frequency })}` +
+      `</span>`;
+
+    html += `<div class="lemma-outline">${data.outline}</div>`;
+
+    return html;
+  }
+
+  /**
+   * Handle click on "find all occurrences" link
+   */
+  containerEl.addEventListener('click', (e) => {
+    const link = e.target.closest('.lemma-findall');
+    if (!link) return;
+
     const lemma = link.getAttribute('data-lemma');
     const textid = link.getAttribute('data-textid');
 
@@ -82,106 +157,74 @@ export function LemmaPopupPlugin(app) {
     lemmaPopup.hide();
   });
 
+  /**
+   * Handle click on lemma word in Bible text
+   */
   const windowsMain = document.querySelector('.windows-main');
   if (windowsMain) {
-    // Event handler that uses `this` - keep as regular function
-    on(windowsMain, 'click', '.BibleWindow l', function(e) {
-      const l = this;
+    windowsMain.addEventListener('click', (e) => {
+      const lemmaEl = e.target.closest('.BibleWindow l');
+      if (!lemmaEl) return;
 
+      // Toggle popup if clicking same word
+      if (containerEl.style.display !== 'none' && lemmaPopup.currentWord === lemmaEl) {
+        lemmaPopup.hide();
+        lemmaPopup.currentWord = null;
+        lemmaEl.classList.remove('selected-lemma');
+        return;
+      }
+
+      // Hide any existing popup
       if (containerEl.style.display !== 'none') {
         lemmaPopup.hide();
-        if (lemmaPopup.currentWord === l) {
-          lemmaPopup.currentWord = null;
-          l.classList.remove('selected-lemma');
-          return;
-        }
       }
 
-      lemmaPopup.currentWord = l;
+      // Update selection state
+      lemmaPopup.currentWord = lemmaEl;
+      document.querySelectorAll('.selected-lemma').forEach((el) => el.classList.remove('selected-lemma'));
+      lemmaEl.classList.add('selected-lemma');
 
-      document.querySelectorAll('.selected-lemma').forEach((el) => {
-        el.classList.remove('selected-lemma');
-      });
-      l.classList.add('selected-lemma');
+      // Parse attributes
+      const strongs = parseStrongs(lemmaEl.getAttribute('s'));
+      const morphs = parseMorphs(lemmaEl.getAttribute('m'));
 
-      const morph = l.getAttribute('m');
-      const morphs = (morph != null) ? morph.split(' ') : [];
-
-      const strong = l.getAttribute('s');
-      const strongs = (strong != null) ? strong.replace(/H/gi, '').replace(/G/gi, '').split(' ') : [];
-
-      const verse = closest(l, '.verse, .v');
-      const verseCode = verse?.getAttribute('data-id') ?? '';
-      const bookId = verseCode.substring(0, 2);
-      const chapter = closest(l, '.chapter');
+      // Get context info using native closest()
+      const verse = lemmaEl.closest('.verse, .v');
+      const bookId = verse?.getAttribute('data-id')?.substring(0, 2) ?? '';
+      const chapter = lemmaEl.closest('.chapter');
       const textid = chapter?.getAttribute('data-textid') ?? '';
-
-      let langPrefix = 'G';
-      let langCode = 'el';
-      let morphType = 'Greek';
-      let dir = 'ltr';
-
-      // Convert strongs to integers
-      for (let i = 0; i < strongs.length; i++) {
-        strongs[i] = parseInt(strongs[i], 10);
-      }
-
-      // Check for language
-      const section = closest(l, '.section');
+      const section = lemmaEl.closest('.section');
       const sectionLang = section?.getAttribute('lang') ?? '';
 
-      if (sectionLang === 'el' ||
-        sectionLang === 'gr' ||
-        sectionLang === 'grc' ||
-        sectionLang === 'grk' ||
-        NT_BOOKS.indexOf(bookId) > -1 ||
-        AP_BOOKS.indexOf(bookId) > -1) {
-        langPrefix = 'G';
-        langCode = 'el';
-        dir = 'ltr';
-        morphType = 'Greek';
-      } else if (sectionLang === 'he' ||
-        sectionLang === 'heb' ||
-        OT_BOOKS.indexOf(bookId) > -1) {
-        langPrefix = 'H';
-        langCode = 'he';
-        dir = 'rtl';
-        morphType = 'Hebrew';
+      // Determine language
+      const langConfig = getLangConfig(sectionLang, bookId);
+
+      // Remove article if multiple words
+      if (strongs.length > 1) {
+        removeArticle(strongs, morphs, langConfig.langPrefix);
       }
 
-      // Remove articles (G3588 and H853) when there is more than one
-      if (strongs.length > 0) {
-        let articleIndex = -1;
-
-        for (let i = 0; i < strongs.length; i++) {
-          if ((strongs[i] === 3588 && langPrefix === 'G') || (strongs[i] === 853 && langPrefix === 'H')) {
-            articleIndex = i;
-            break;
-          }
-        }
-
-        if (articleIndex > -1) {
-          strongs.splice(articleIndex, 1);
-          if (morphs.length > articleIndex) {
-            morphs.splice(articleIndex, 1);
-          }
-        }
-      }
-
-      // Show popup
+      // Show popup with loading state
       lemmaPopup.show();
-      lemmaPopup.position(l);
+      lemmaPopup.position(lemmaEl);
 
-      const bodyEl = toElement(lemmaPopup.body);
-      bodyEl.innerHTML = 'Loading...';
+      if (strongs.length === 0) {
+        bodyEl.innerHTML = 'No Strong\'s data available';
+        return;
+      }
 
-      if (strongs.length > 0) {
-        bodyEl.innerHTML = '';
-        bodyEl.classList.add('loading-indicator');
+      bodyEl.innerHTML = '';
+      bodyEl.classList.add('loading-indicator');
 
-        for (const [i, strongNum] of strongs.entries()) {
-          loadStrongsData(textid, strongNum, i < morphs.length ? morphs[i] : '', morphType, langPrefix, langCode, dir, l);
-        }
+      // Load data for each Strong's number
+      for (let i = 0; i < strongs.length; i++) {
+        loadStrongsData({
+          textid,
+          strongsNumber: strongs[i],
+          morphKey: morphs[i] || '',
+          langConfig,
+          targetEl: lemmaEl
+        });
       }
     });
   }
