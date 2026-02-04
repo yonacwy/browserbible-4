@@ -20,16 +20,6 @@ export default defineConfig({
 				'verse-detection': resolve(__dirname, 'index.ts'),
 				'verse-detection-auto': resolve(__dirname, 'auto.ts'),
 				'languages/index': resolve(__dirname, 'languages/index.ts'),
-				'languages/en': resolve(__dirname, 'languages/en.ts'),
-				'languages/es': resolve(__dirname, 'languages/es.ts'),
-				'languages/pt': resolve(__dirname, 'languages/pt.ts'),
-				'languages/fr': resolve(__dirname, 'languages/fr.ts'),
-				'languages/de': resolve(__dirname, 'languages/de.ts'),
-				'languages/ru': resolve(__dirname, 'languages/ru.ts'),
-				'languages/ar': resolve(__dirname, 'languages/ar.ts'),
-				'languages/hi': resolve(__dirname, 'languages/hi.ts'),
-				'languages/zh': resolve(__dirname, 'languages/zh.ts'),
-				'languages/id': resolve(__dirname, 'languages/id.ts'),
 				'languages/types': resolve(__dirname, 'languages/types.ts')
 			},
 
