@@ -1,6 +1,7 @@
 import { getConfig } from '../core/config.js';
 import { i18n } from '../lib/i18n.js';
 import { MovableWindow } from '../ui/MovableWindow.js';
+import { elem } from '../lib/helpers.esm.js';
 
 const WINDOW_SIZE = { widthRatio: 0.8, heightRatio: 0.7 };
 
@@ -12,7 +13,7 @@ async function fetchAboutContent(url) {
 
 export function AboutScreen() {
   const config = getConfig();
-  const aboutButton = Object.assign(document.createElement('div'), {
+  const aboutButton = elem('div', {
     className: 'main-menu-item about-logo i18n',
     textContent: 'About'
   });

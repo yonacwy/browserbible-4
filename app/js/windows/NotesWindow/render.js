@@ -1,0 +1,190 @@
+/**
+ * NotesWindow Render Functions
+ * UI rendering using elem helper
+ */
+
+import { elem } from '../../lib/helpers.esm.js';
+
+/**
+ * Format a timestamp for display
+ */
+export function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const noteDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (noteDate.getTime() === today.getTime()) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+/**
+ * Extract plain text from HTML
+ */
+export function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+/**
+ * Escape HTML special characters
+ */
+export function escapeHtml(text) {
+  if (text == null) return '';
+  const div = document.createElement('div');
+  div.textContent = String(text);
+  return div.innerHTML;
+}
+
+/**
+ * Create the main window structure
+ */
+export function renderWindowStructure() {
+  // Header
+  const header = elem('div', { className: 'window-header notes-header' },
+    elem('button', { className: 'notes-sidebar-toggle header-button', title: 'Toggle Sidebar', innerHTML: '&#9776;' }),
+    elem('button', { className: 'notes-new-btn header-button', title: 'New Note', textContent: '+' }),
+    elem('button', { className: 'notes-link-btn header-button', title: 'Link to Current Verse', textContent: 'Link' }),
+    elem('div', { className: 'notes-download-container' },
+      elem('button', { className: 'notes-download-btn header-button', title: 'Download Notes', innerHTML: '&#8595;' }),
+      elem('div', { className: 'notes-download-menu' },
+        elem('div', { className: 'notes-download-item', dataset: { format: 'markdown' }, textContent: 'Download as Markdown' }),
+        elem('div', { className: 'notes-download-item', dataset: { format: 'text' }, textContent: 'Download as Plain Text' }),
+        elem('div', { className: 'notes-download-item', dataset: { format: 'rtf' }, textContent: 'Download as RTF' })
+      )
+    ),
+    elem('div', { className: 'notes-search-container' },
+      elem('input', { type: 'text', className: 'notes-search app-input', placeholder: 'Search notes...' }),
+      elem('div', { className: 'notes-search-suggestions' })
+    )
+  );
+
+  // Sidebar
+  const sidebar = elem('div', { className: 'notes-sidebar' },
+    elem('div', { className: 'notes-sidebar-header' },
+      elem('select', { className: 'notes-filter app-select' },
+        elem('option', { value: 'all', textContent: 'All Notes' }),
+        elem('option', { value: 'linked', textContent: 'Linked to Verse' }),
+        elem('option', { value: 'standalone', textContent: 'Standalone' }),
+        elem('option', { value: 'reference', textContent: 'Current Verse' })
+      )
+    ),
+    elem('div', { className: 'notes-list' })
+  );
+
+  // Editor container
+  const editorContainer = elem('div', { className: 'notes-editor-container' },
+    elem('div', { className: 'notes-editor-header' },
+      elem('input', { type: 'text', className: 'notes-title-input app-input', placeholder: 'Note title...' }),
+      elem('span', { className: 'notes-reference-badge' }),
+      elem('button', { className: 'notes-unlink-btn', title: 'Remove verse link', innerHTML: '&times;' }),
+      elem('button', { className: 'notes-delete-btn', title: 'Delete note', textContent: 'Delete' })
+    ),
+    elem('div', { className: 'notes-richtext-toolbar' },
+      elem('button', { dataset: { command: 'bold' }, title: 'Bold (Ctrl+B)' }, elem('b', 'B')),
+      elem('button', { dataset: { command: 'italic' }, title: 'Italic (Ctrl+I)' }, elem('i', 'I')),
+      elem('button', { dataset: { command: 'underline' }, title: 'Underline (Ctrl+U)' }, elem('u', 'U')),
+      elem('span', { className: 'toolbar-separator' }),
+      elem('button', { dataset: { command: 'formatBlock', value: 'H2' }, title: 'Heading', textContent: 'H' }),
+      elem('button', { dataset: { command: 'formatBlock', value: 'P' }, title: 'Paragraph', textContent: 'P' }),
+      elem('span', { className: 'toolbar-separator' }),
+      elem('button', { dataset: { command: 'insertUnorderedList' }, title: 'Bullet List', innerHTML: '&#8226;' }),
+      elem('button', { dataset: { command: 'insertOrderedList' }, title: 'Numbered List', textContent: '1.' })
+    ),
+    elem('div', {
+      className: 'notes-editor',
+      contentEditable: 'true',
+      placeholder: 'Start writing... (Notes are stored locally in your browser and may be lost if you clear browser data)'
+    }),
+    elem('div', { className: 'notes-editor-footer' },
+      elem('span', { className: 'notes-status' }),
+      elem('span', { className: 'notes-modified' })
+    )
+  );
+
+  // Empty state
+  const emptyState = elem('div', { className: 'notes-empty-state' },
+    elem('p', 'No note selected'),
+    elem('p', 'Select a note from the list or create a new one'),
+    elem('p', { className: 'notes-storage-warning', textContent: "Notes are stored in your browser's local storage and may be lost if you clear browser data." })
+  );
+
+  // Main area
+  const main = elem('div', { className: 'window-main notes-main' },
+    sidebar,
+    editorContainer,
+    emptyState
+  );
+
+  return { header, main };
+}
+
+/**
+ * Render a single note list item
+ */
+export function renderNoteListItem(note, isSelected) {
+  const title = note.title || 'Untitled';
+  const preview = stripHtml(note.content || '').substring(0, 50);
+  const date = formatDate(note.modified);
+
+  const item = elem('div', {
+    className: `notes-list-item ${isSelected ? 'selected' : ''}`,
+    dataset: { noteId: note.id }
+  },
+    elem('div', { className: 'notes-list-item-title', textContent: title }),
+    elem('div', { className: 'notes-list-item-meta' },
+      elem('span', date),
+      note.reference
+        ? elem('span', { className: 'notes-list-item-badge', textContent: note.referenceDisplay || note.reference })
+        : null
+    ),
+    elem('div', { className: 'notes-list-item-preview', textContent: preview })
+  );
+
+  return item;
+}
+
+/**
+ * Render the notes list
+ */
+export function renderNotesList(notes, currentNoteId) {
+  if (notes.length === 0) {
+    return elem('div', { className: 'notes-empty-list', textContent: 'No notes found' });
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (const note of notes) {
+    fragment.appendChild(renderNoteListItem(note, note.id === currentNoteId));
+  }
+  return fragment;
+}
+
+/**
+ * Render a single search suggestion item
+ */
+export function renderSuggestionItem(note, index, isSelected) {
+  const title = note.title || 'Untitled';
+  const preview = stripHtml(note.content || '').substring(0, 60);
+
+  return elem('div', {
+    className: `notes-suggestion-item ${isSelected ? 'selected' : ''}`,
+    dataset: { index: String(index) }
+  },
+    elem('div', { className: 'notes-suggestion-title', textContent: title }),
+    elem('div', { className: 'notes-suggestion-preview', textContent: preview })
+  );
+}
+
+/**
+ * Render search suggestions list
+ */
+export function renderSearchSuggestions(matches, selectedIndex) {
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < matches.length; i++) {
+    fragment.appendChild(renderSuggestionItem(matches[i], i, i === selectedIndex));
+  }
+  return fragment;
+}

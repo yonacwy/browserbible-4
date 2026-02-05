@@ -21,8 +21,7 @@ export function RestoreButton(_parentNode, _menu) {
 
   const buttonMenu = document.querySelector('#main-menu-windows-list');
 
-  const restoreButton = elem('span', { className: 'window-reset i18n', textContent: 'Reset' });
-  restoreButton.setAttribute('data-i18n', '[html]menu.reset');
+  const restoreButton = elem('span', { className: 'window-reset i18n', textContent: 'Reset', dataset: { i18n: '[html]menu.reset' } });
 
   restoreButton.addEventListener('click', () => {
     if (config.windows !== undefined) {

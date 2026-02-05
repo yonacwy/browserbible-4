@@ -21,13 +21,10 @@ export function TextNavigator() {
   let textInfo = null;
   let fullBookMode = false;
 
-  const changer = elem('div', { className: 'text-navigator nav-drop-list', popover: '' });
-  const header = elem('div', { className: 'text-navigator-header' });
   const title = elem('span', { className: 'text-navigator-title', innerHTML: '&nbsp;' });
-
-  header.append(title);
+  const header = elem('div', { className: 'text-navigator-header' }, title);
   const divisions = elem('div', { className: 'text-navigator-divisions' });
-  changer.append(header, divisions);
+  const changer = elem('div', { className: 'text-navigator nav-drop-list', popover: '' }, header, divisions);
 
   document.body.appendChild(changer);
 
@@ -115,14 +112,10 @@ export function TextNavigator() {
 
   function buildDivisionElement(divisionid, divisionName, displayName) {
     const chapters = textInfo.sections.filter(c => c.substring(0, 2) === divisionid);
-    const div = elem('div', {
-      className: `text-navigator-division divisionid-${divisionid} division-section-${getBookSectionClass(divisionid)}`
-    });
-    div.dataset.id = divisionid;
-    div.dataset.chapters = chapters.join(',');
-    div.dataset.name = divisionName;
-    div.appendChild(elem('span', { textContent: displayName }));
-    return div;
+    return elem('div', {
+      className: `text-navigator-division divisionid-${divisionid} division-section-${getBookSectionClass(divisionid)}`,
+      dataset: { id: divisionid, chapters: chapters.join(','), name: divisionName }
+    }, elem('span', displayName));
   }
 
   function renderDivisions() {
@@ -203,8 +196,11 @@ export function TextNavigator() {
     const fragment = document.createDocumentFragment();
     for (const code of chapters) {
       const num = parseInt(code.substring(2));
-      const span = elem('span', { className: `text-navigator-section section-${code}`, textContent: numbers[num] });
-      span.dataset.id = code;
+      const span = elem('span', {
+        className: `text-navigator-section section-${code}`,
+        textContent: numbers[num],
+        dataset: { id: code }
+      });
       fragment.appendChild(span);
     }
     return fragment;
@@ -247,9 +243,6 @@ export function TextNavigator() {
 
     if (isBibleType) {
       renderBibleSections(animated);
-    } else if (textType === 'book') {
-      
-      // Note: book type doesn't insert into DOM here, used elsewhere
     }
   }
 

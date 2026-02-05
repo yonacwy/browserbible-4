@@ -282,14 +282,11 @@ const MorphologySelector = () => {
   let currentMorphologyKey = 'robinson';
   let currentMorphology = morphologies[currentMorphologyKey];
 
-  const morphSelector = elem('div', { className: 'morph-selector' });
-  const morphGrid = elem('div', { className: 'morph-grid', style: { display: 'grid', gridAutoColumns: 'auto', gridTemplateRows: 'auto auto' } });
-  const morphSelectorHeaderRow = elem('div', { className: 'morph-header-row', style: { display: 'contents' } });
-  const morphTh = elem('div', { className: 'morph-th', textContent: 'Part of Speech', style: { gridRow: '1' } });
-  morphSelectorHeaderRow.appendChild(morphTh);
+  const morphTh = elem('div', { className: 'morph-th', style: { gridRow: '1' } }, 'Part of Speech');
+  const morphSelectorHeaderRow = elem('div', { className: 'morph-header-row', style: { display: 'contents' } }, morphTh);
   const morphSelectorMainRow = elem('div', { className: 'morph-main-row', style: { display: 'contents' } });
-  morphGrid.append(morphSelectorHeaderRow, morphSelectorMainRow);
-  morphSelector.appendChild(morphGrid);
+  const morphGrid = elem('div', { className: 'morph-grid', style: { display: 'grid', gridAutoColumns: 'auto', gridTemplateRows: 'auto auto' } }, morphSelectorHeaderRow, morphSelectorMainRow);
+  const morphSelector = elem('div', { className: 'morph-selector' }, morphGrid);
 
   document.body.appendChild(morphSelector);
   morphSelector.style.display = 'none';
@@ -332,9 +329,10 @@ const MorphologySelector = () => {
       row.appendChild(td);
 
       for (const part of declension.parts) {
-        const span = elem('span', { textContent: part.type });
-        span.setAttribute('data-value', part.letter);
-        if (declension.breakBefore) span.setAttribute('data-breakbefore', 'true');
+        const span = elem('span', {
+          textContent: part.type,
+          dataset: { value: part.letter, ...(declension.breakBefore && { breakbefore: 'true' }) }
+        });
         td.appendChild(span);
       }
     }
@@ -348,8 +346,7 @@ const MorphologySelector = () => {
     morphSelectorPOS.innerHTML = '';
 
     for (const morph of currentMorphology) {
-      const span = elem('span', { textContent: morph.type });
-      span.setAttribute('data-value', morph.letter);
+      const span = elem('span', { dataset: { value: morph.letter } }, morph.type);
       morphSelectorPOS.appendChild(span);
     }
 
@@ -517,12 +514,9 @@ export function VisualFilters(app) {
     }
   });
   const thActive = elem('div', { className: 'visualfilters-active visualfilters-th' });
-  const thStrongs = elem('div', { className: 'visualfilters-strongs visualfilters-th i18n', textContent: "Strong's" });
-  thStrongs.setAttribute('data-i18n', '[html]plugins.visualfilters.strongsnumber');
-  const thMorph = elem('div', { className: 'visualfilters-morph visualfilters-th i18n', textContent: 'Morphology' });
-  thMorph.setAttribute('data-i18n', '[html]plugins.visualfilters.morphology');
-  const thStyle = elem('div', { className: 'visualfilters-style visualfilters-th i18n', textContent: 'Style' });
-  thStyle.setAttribute('data-i18n', '[html]plugins.visualfilters.style');
+  const thStrongs = elem('div', { className: 'visualfilters-strongs visualfilters-th i18n', dataset: { i18n: '[html]plugins.visualfilters.strongsnumber' } }, "Strong's");
+  const thMorph = elem('div', { className: 'visualfilters-morph visualfilters-th i18n', dataset: { i18n: '[html]plugins.visualfilters.morphology' } }, 'Morphology');
+  const thStyle = elem('div', { className: 'visualfilters-style visualfilters-th i18n', dataset: { i18n: '[html]plugins.visualfilters.style' } }, 'Style');
   const thRemove = elem('div', { className: 'visualfilters-remove visualfilters-th' });
   visualGrid.append(thActive, thStrongs, thMorph, thStyle, thRemove);
   const tbody = visualGrid; // tbody is now the grid itself (rows added directly)
@@ -534,8 +528,7 @@ export function VisualFilters(app) {
   const morphSelector = MorphologySelector();
 
   const configToolsBody = document.querySelector('#config-tools .config-body');
-  const openVisualizationsButton = elem('span', { className: 'config-button i18n', id: 'config-visualfilters-button' });
-  openVisualizationsButton.setAttribute('data-i18n', '[html]plugins.visualfilters.button');
+  const openVisualizationsButton = elem('span', { className: 'config-button i18n', id: 'config-visualfilters-button', dataset: { i18n: '[html]plugins.visualfilters.button' } });
 
   if (configToolsBody) {
     configToolsBody.appendChild(openVisualizationsButton);

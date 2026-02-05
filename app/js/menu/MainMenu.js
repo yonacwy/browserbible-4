@@ -3,16 +3,17 @@
  */
 
 import { getAllMenuComponents } from '../core/registry.js';
+import { elem } from '../lib/helpers.esm.js';
 
 export class MainMenu {
   constructor(headerNode) {
     this.node = headerNode;
     this.components = [];
 
-    const logo = Object.assign(document.createElement('div'), { id: 'app-logo' });
+    const logo = elem('div', { id: 'app-logo' });
     this.node.appendChild(logo);
 
-    this.menuContainer = Object.assign(document.createElement('div'), { className: 'main-menu-container' });
+    this.menuContainer = elem('div', { className: 'main-menu-container' });
     this.node.appendChild(this.menuContainer);
 
     this._initComponents();

@@ -21,7 +21,7 @@ export function ThemeSetting(_parentNode, _menu) {
   }
 
   const body = document.querySelector('#config-type .config-body');
-  const themesBlock = Object.assign(document.createElement('div'), { id: 'config-themes' });
+  const themesBlock = elem('div', { id: 'config-themes' });
   const themeNames = ['default', 'sepia', 'dark'];
   const defaultThemeSetting = { themeName: themeNames[0] };
   const themeKey = 'config-theme';
@@ -33,10 +33,9 @@ export function ThemeSetting(_parentNode, _menu) {
     const span = elem('span', {
       id: `config-theme-${themeName}`,
       className: 'config-theme-toggle i18n',
-      textContent: themeName
+      textContent: themeName,
+      dataset: { i18n: `[html]menu.themes.${themeName}`, themename: themeName }
     });
-    span.setAttribute('data-i18n', `[html]menu.themes.${themeName}`);
-    span.setAttribute('data-themename', themeName);
     themesBlock.appendChild(span);
   }
 

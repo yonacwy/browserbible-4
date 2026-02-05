@@ -90,9 +90,8 @@ export function ConfigUrl() {
 
   const body = document.querySelector('#main-menu-features');
   const linkButton = elem('span', { className: 'url-copy-button' });
-  const urlInput = elem('input', {type: 'text', id: 'config-global-url-input', readOnly: true});
-  const urlBox = elem('div', { id: 'config-global-url' });
-  urlBox.append(linkButton, urlInput);
+  const urlInput = elem('input', { type: 'text', id: 'config-global-url-input', readOnly: true });
+  const urlBox = elem('div', { id: 'config-global-url' }, linkButton, urlInput);
 
   if (body) {
     body.after(urlBox);

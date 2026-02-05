@@ -35,17 +35,15 @@ export function TextChooser() {
   const recentlyUsedKey = 'texts-recently-used';
   let recentlyUsed = AppSettings.getValue(recentlyUsedKey, { recent: [] });
 
-  const textChooser = elem('div', { className: 'text-chooser nav-drop-list', popover: 'auto' });
-
-  const header = elem('div', { className: 'text-chooser-header' });
-  const filter = elem('input', { type: 'text', className: 'text-chooser-filter-text i18n' });
-  filter.setAttribute('data-i18n', '[placeholder]windows.bible.filter');
-
-  header.append(filter);
-  const main = elem('div', { className: 'text-chooser-main' });
+  const filter = elem('input', {
+    type: 'text',
+    className: 'text-chooser-filter-text i18n',
+    dataset: { i18n: '[placeholder]windows.bible.filter' }
+  });
+  const header = elem('div', { className: 'text-chooser-header' }, filter);
   const scrollContent = elem('div', { className: 'text-chooser-scroll-content' });
-  main.appendChild(scrollContent);
-  textChooser.append(header, main);
+  const main = elem('div', { className: 'text-chooser-main' }, scrollContent);
+  const textChooser = elem('div', { className: 'text-chooser nav-drop-list', popover: 'auto' }, header, main);
 
   document.body.appendChild(textChooser);
 
@@ -165,7 +163,7 @@ export function TextChooser() {
     if (item.type === 'header') {
       row.className = 'text-chooser-row-header';
       row.dataset.langName = item.data;
-      row.appendChild(elem('span', { className: 'name', textContent: item.data }));
+      row.appendChild(elem('span', { className: 'name' }, item.data));
     } else {
       const text = item.data;
       const isSelected = selectedTextInfo && selectedTextInfo.id === text.id;
@@ -173,18 +171,14 @@ export function TextChooser() {
       row.className = 'text-chooser-row' + (isSelected ? ' selected' : '');
       row.dataset.id = text.id;
 
-      row.appendChild(elem('span', { className: 'text-chooser-abbr', textContent: text.abbr }));
-      row.appendChild(elem('span', { className: 'text-chooser-name', textContent: text.name }));
+      row.appendChild(elem('span', { className: 'text-chooser-abbr' }, text.abbr));
+      row.appendChild(elem('span', { className: 'text-chooser-name' }, text.name));
 
       if (text.hasLemma) {
-        const lemmaIcon = elem('span', { className: 'text-chooser-lemma' });
-        lemmaIcon.appendChild(elem('span'));
-        row.appendChild(lemmaIcon);
+        row.appendChild(elem('span', { className: 'text-chooser-lemma' }, elem('span')));
       }
       if (text.hasAudio || text.audioDirectory || text.fcbh_audio_ot || text.fcbh_audio_nt) {
-        const audioIcon = elem('span', { className: 'text-chooser-audio' });
-        audioIcon.appendChild(elem('span'));
-        row.appendChild(audioIcon);
+        row.appendChild(elem('span', { className: 'text-chooser-audio' }, elem('span')));
       }
     }
 

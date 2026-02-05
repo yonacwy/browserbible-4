@@ -6,6 +6,7 @@
 import { WindowManager } from './WindowManager.js';
 import { MainMenu } from '../menu/MainMenu.js';
 import AppSettings from '../common/AppSettings.js';
+import { elem } from '../lib/helpers.esm.js';
 import { getConfig, updateConfig, getCustomConfig } from './config.js';
 import {
   setApp,
@@ -28,10 +29,10 @@ export class App {
     this.mainMenu = null;
     this.plugins = [];
 
-    this.container = Object.assign(document.createElement('div'), { className: 'windows-container' });
-    this.header = Object.assign(document.createElement('div'), { className: 'windows-header' });
-    this.main = Object.assign(document.createElement('div'), { className: 'windows-main' });
-    this.footer = Object.assign(document.createElement('div'), { className: 'windows-footer' });
+    this.container = elem('div', { className: 'windows-container' });
+    this.header = elem('div', { className: 'windows-header' });
+    this.main = elem('div', { className: 'windows-main' });
+    this.footer = elem('div', { className: 'windows-footer' });
 
     document.body.appendChild(this.container);
     this.container.appendChild(this.header);

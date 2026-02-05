@@ -27,7 +27,7 @@ export function FontSizeSettings(_parentNode, _menu) {
   for (let size = fontSizeMin; size <= fontSizeMax; size += fontSizeStep) {
     styleCode += `.config-font-size-${size} .reading-text { font-size: ${size}px; }`;
   }
-  const styleEl = elem('style', { textContent: styleCode });
+  const styleEl = elem('style', styleCode);
   document.head.appendChild(styleEl);
 
   if (!config.enableFontSizeSelector) {
@@ -44,9 +44,9 @@ export function FontSizeSettings(_parentNode, _menu) {
     id: 'font-size-container',
     style: { display: 'flex', alignItems: 'center', gap: '8px' }
   });
-  const span1 = elem('span', { textContent: 'A', style: { fontSize: `${fontSizeMin}px` } });
+  const span1 = elem('span', { style: { fontSize: `${fontSizeMin}px` } }, 'A');
   const sliderWrapper = elem('div', { style: { flex: '1' } });
-  const span2 = elem('span', { textContent: 'A', style: { fontSize: `${fontSizeMax}px` } });
+  const span2 = elem('span', { style: { fontSize: `${fontSizeMax}px` } }, 'A');
   container.append(span1, sliderWrapper, span2);
   body?.appendChild(container);
 

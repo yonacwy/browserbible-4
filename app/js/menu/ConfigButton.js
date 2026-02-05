@@ -16,8 +16,7 @@ import { MovableWindow } from '../ui/MovableWindow.js';
  */
 export function ConfigButton(_parentNode, _menu) {
   const container = document.querySelector('.windows-container');
-  const configButton = elem('div', { className: 'main-menu-item image-config i18n' });
-  configButton.setAttribute('data-i18n', '[html]menu.labels.settings');
+  const configButton = elem('div', { className: 'main-menu-item image-config i18n', dataset: { i18n: '[html]menu.labels.settings' } });
   const mainMenuFeatures = document.querySelector('#main-menu-features');
 
   const configWindow = new MovableWindow(300, 380, i18n.t('menu.labels.settings'), 'config-window');

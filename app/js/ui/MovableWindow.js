@@ -14,14 +14,12 @@ import { elem, offset } from '../lib/helpers.esm.js';
  * @returns {Object} Window API object
  */
 export function MovableWindow(width = 300, height = 200, titleText = '', id = null) {
-  const container = elem('div', { className: 'movable-window', popover: '' });
-  if (id) container.id = id;
-  const header = elem('div', { className: 'movable-header' });
-  const title = elem('span', { className: 'movable-header-title', textContent: titleText });
+  const title = elem('span', { className: 'movable-header-title' }, titleText);
   const close = elem('span', { className: 'close-button' });
-  header.append(title, close);
+  const header = elem('div', { className: 'movable-header' }, title, close);
   const body = elem('div', { className: 'movable-body' });
-  container.append(header, body);
+  const container = elem('div', { className: 'movable-window', popover: '' }, header, body);
+  if (id) container.id = id;
 
   document.body.appendChild(container);
 

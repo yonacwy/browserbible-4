@@ -16,14 +16,11 @@ import { mixinEventEmitter } from '../common/EventEmitter.js';
 export function MainMenuButton(parentNode, _menu) {
   const mainMenuLogo = elem('div', { id: 'app-logo' });
   const mainMenuButton = elem('div', { id: 'main-menu-button' });
-  const mainMenuDropDown = elem('div', { id: 'main-menu-dropdown', popover: '' });
-  const heading1 = elem('div', { className: 'main-menu-heading i18n', textContent: 'Add Window' });
-  heading1.setAttribute('data-i18n', '[html]menu.labels.addwindow');
+  const heading1 = elem('div', { className: 'main-menu-heading i18n', dataset: { i18n: '[html]menu.labels.addwindow' } }, 'Add Window');
   const windowsList = elem('div', { id: 'main-menu-windows-list', className: 'main-menu-list' });
-  const heading2 = elem('div', { className: 'main-menu-heading i18n' });
-  heading2.setAttribute('data-i18n', '[html]menu.labels.options');
+  const heading2 = elem('div', { className: 'main-menu-heading i18n', dataset: { i18n: '[html]menu.labels.options' } });
   const features = elem('div', { id: 'main-menu-features', className: 'main-menu-list' });
-  mainMenuDropDown.append(heading1, windowsList, heading2, features);
+  const mainMenuDropDown = elem('div', { id: 'main-menu-dropdown', popover: '' }, heading1, windowsList, heading2, features);
 
   if (parentNode) {
     parentNode.appendChild(mainMenuLogo);

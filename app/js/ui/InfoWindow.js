@@ -13,11 +13,10 @@ import { mixinEventEmitter } from '../common/EventEmitter.js';
  * @returns {Object} InfoWindow API object
  */
 export function InfoWindow(id = null) {
-  const container = elem('div', { className: 'info-window', popover: '' });
-  if (id) container.id = id;
   const close = elem('span', { className: 'close-button' });
   const body = elem('div', { className: 'info-body' });
-  container.append(close, body);
+  const container = elem('div', { className: 'info-window', popover: '' }, close, body);
+  if (id) container.id = id;
 
   document.body.appendChild(container);
 

@@ -46,7 +46,7 @@ export function FontFamilySettings(_parentNode, _menu) {
       '}';
   }
 
-  const styleEl = elem('style', { textContent: fontFamilyStyle });
+  const styleEl = elem('style', fontFamilyStyle);
   document.head.appendChild(styleEl);
 
   // Define setFontFamily before usage

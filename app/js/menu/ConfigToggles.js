@@ -62,10 +62,9 @@ export function ConfigToggles(_parentNode, _menu) {
     const toggleId = toggleName.replace(/\s/gi, '').toLowerCase();
     const toggleDefaultSetting = { checked: defaultValue };
     const toggleSetting = AppSettings.getValue(toggleId, toggleDefaultSetting);
-    const toggle = elem('div', { id: `config-toggle-${toggleId}`, className: 'config-toggle' });
     const input = elem('input', { id: `config-toggle-${toggleId}-input`, type: 'checkbox', value: toggleId });
-    const label = elem('label', { htmlFor: `config-toggle-${toggleId}-input`, title: toggleName, textContent: toggleName });
-    toggle.append(input, label);
+    const label = elem('label', { htmlFor: `config-toggle-${toggleId}-input`, title: toggleName }, toggleName);
+    const toggle = elem('div', { id: `config-toggle-${toggleId}`, className: 'config-toggle' }, input, label);
 
     body?.appendChild(toggle);
     if (input) {

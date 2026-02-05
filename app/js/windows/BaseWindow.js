@@ -315,7 +315,8 @@ style.textContent = `
   audio-window,
   parallels-window,
   statistics-window,
-  media-window {
+  media-window,
+  notes-window {
     display: block;
     width: 100%;
     height: 100%;

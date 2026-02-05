@@ -6,6 +6,7 @@
 import { getConfig } from '../core/config.js';
 import { i18n } from '../lib/i18n.js';
 import { getAllResources } from '../core/registry.js';
+import { elem } from '../lib/helpers.esm.js';
 
 /**
  * Create language setting controls
@@ -21,13 +22,13 @@ export function LanguageSetting(_parentNode, _menu) {
   }
 
   const body = document.querySelector('#config-tools .config-body');
-  const list = Object.assign(document.createElement('select'), { id: 'config-language', className: 'app-list' });
+  const list = elem('select', { id: 'config-language', className: 'app-list' });
   const resources = getAllResources();
   const langKeys = Object.keys(resources);
 
   if (body) {
     body.appendChild(list);
-    body.appendChild(Object.assign(document.createElement('div'), { className: 'clear' }));
+    body.appendChild(elem('div', { className: 'clear' }));
   }
 
   // make sure English isn't first!
@@ -36,7 +37,7 @@ export function LanguageSetting(_parentNode, _menu) {
   for (const langKey of langKeys) {
     const langName = resources[langKey].translation.name;
 
-    const option = Object.assign(document.createElement('option'), { value: langKey, textContent: langName });
+    const option = elem('option', { value: langKey, textContent: langName });
     list.appendChild(option);
   }
 

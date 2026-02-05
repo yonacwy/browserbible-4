@@ -38,11 +38,9 @@ function getCurrentVersion() {
  * @returns {HTMLElement} Search box element
  */
 export function MainSearchBox(parentNode, _menu) {
-  const searchBox = elem('div', { id: 'main-search-box' });
-  const searchInput = elem('input', { type: 'search', className: 'i18n', id: 'main-search-input', autocomplete: 'off' });
-  searchInput.setAttribute('data-i18n', '[placeholder]menu.search.placeholder');
+  const searchInput = elem('input', { type: 'search', className: 'i18n', id: 'main-search-input', autocomplete: 'off', dataset: { i18n: '[placeholder]menu.search.placeholder' } });
   const searchButton = elem('input', { type: 'button', id: 'main-search-button', value: '' });
-  searchBox.append(searchInput, searchButton);
+  const searchBox = elem('div', { id: 'main-search-box' }, searchInput, searchButton);
 
   const suggestions = elem('div', { id: 'main-search-suggestions', style: { display: 'none' } });
 

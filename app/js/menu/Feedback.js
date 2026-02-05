@@ -22,49 +22,42 @@ export function Feedback(_parentNode, _menu) {
   }
 
   const container = document.querySelector('.windows-container');
-  const feedbackButton = elem('div', { className: 'main-menu-item feedback-logo i18n', textContent: 'Feedback' });
-  feedbackButton.setAttribute('data-i18n', '[html]menu.labels.feedback');
+  const feedbackButton = elem('div', {
+    className: 'main-menu-item feedback-logo i18n',
+    textContent: 'Feedback',
+    dataset: { i18n: '[html]menu.labels.feedback' }
+  });
   const mainMenuFeatures = document.querySelector('#main-menu-features');
-  const modalOverlay = Object.assign(document.createElement('div'), { className: 'modal-overlay' });
+  const modalOverlay = elem('div', { className: 'modal-overlay', style: { display: 'none' } });
   const feedbackWindow = new MovableWindow(Math.min(window.innerWidth, 500), 300, i18n.t('menu.labels.feedback'));
 
   mainMenuFeatures?.appendChild(feedbackButton);
 
   document.body.appendChild(modalOverlay);
-  modalOverlay.style.display = 'none';
 
   const feedbackBody = feedbackWindow.body;
 
-  const name = elem('input', { type: 'text', id: 'feedback-from', className: 'app-input i18n' });
-  name.setAttribute('data-i18n', '[placeholder]menu.feedback.name');
+  const name = elem('input', { type: 'text', id: 'feedback-from', className: 'app-input i18n', dataset: { i18n: '[placeholder]menu.feedback.name' } });
   feedbackBody.appendChild(name);
 
-  const email = elem('input', { type: 'email', id: 'feedback-email', className: 'app-input i18n' });
-  email.setAttribute('data-i18n', '[placeholder]menu.feedback.email');
+  const email = elem('input', { type: 'email', id: 'feedback-email', className: 'app-input i18n', dataset: { i18n: '[placeholder]menu.feedback.email' } });
   feedbackBody.appendChild(email);
 
-  const subject = elem('select', { id: 'feedback-subject', className: 'app-list' });
-  const opt1 = elem('option', { className: 'i18n' });
-  opt1.setAttribute('data-i18n', '[html]menu.feedback.feature');
-  const opt2 = elem('option', { className: 'i18n' });
-  opt2.setAttribute('data-i18n', '[html]menu.feedback.bug');
-  const opt3 = elem('option', { className: 'i18n' });
-  opt3.setAttribute('data-i18n', '[html]menu.feedback.other');
-  subject.append(opt1, opt2, opt3);
+  const subject = elem('select', { id: 'feedback-subject', className: 'app-list' },
+    elem('option', { className: 'i18n', dataset: { i18n: '[html]menu.feedback.feature' } }),
+    elem('option', { className: 'i18n', dataset: { i18n: '[html]menu.feedback.bug' } }),
+    elem('option', { className: 'i18n', dataset: { i18n: '[html]menu.feedback.other' } })
+  );
   feedbackBody.appendChild(subject);
 
-  const comments = elem('textarea', { id: 'feedback-comment', className: 'app-input i18n' });
-  comments.setAttribute('data-i18n', '[placeholder]menu.feedback.comments');
+  const comments = elem('textarea', { id: 'feedback-comment', className: 'app-input i18n', dataset: { i18n: '[placeholder]menu.feedback.comments' } });
   feedbackBody.appendChild(comments);
 
-  const send = elem('input', { type: 'button', id: 'feedback-submit', className: 'app-button i18n' });
-  send.setAttribute('data-i18n', '[value]menu.feedback.send');
+  const send = elem('input', { type: 'button', id: 'feedback-submit', className: 'app-button i18n', dataset: { i18n: '[value]menu.feedback.send' } });
   feedbackBody.appendChild(send);
 
-  const message = elem('div', { className: 'feedback-message i18n' });
-  message.setAttribute('data-i18n', '[placeholder]menu.feedback.thankyou');
+  const message = elem('div', { className: 'feedback-message i18n', style: { display: 'none' }, dataset: { i18n: '[placeholder]menu.feedback.thankyou' } });
   feedbackBody.appendChild(message);
-  message.style.display = 'none';
 
   feedbackBody.classList.add('feedback-body');
   const feedbackTitle = feedbackWindow.title;

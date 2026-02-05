@@ -70,18 +70,33 @@ export function siblings(el, selector) {
 /**
  * Create a DOM element with properties
  * @param {string} tag - HTML tag name
- * @param {Object} [props={}] - Properties to set on the element
+ * @param {Object|string} [props={}] - Properties object, or string for textContent shorthand
+ * @param {...(Element|string)} [children] - Child elements or text to append
  * @returns {Element} The created element
  */
-export function elem(tag, props = {}) {
+export function elem(tag, props = {}, ...children) {
   const el = document.createElement(tag);
+
+  // Text shorthand: elem('span', 'Hello')
+  if (typeof props === 'string') {
+    el.textContent = props;
+    if (children.length) el.append(...children);
+    return el;
+  }
+
   for (const [key, val] of Object.entries(props)) {
     if (key === 'style' && typeof val === 'object') {
       Object.assign(el.style, val);
+    } else if (key === 'dataset' && typeof val === 'object') {
+      Object.assign(el.dataset, val);
+    } else if (key === 'children') {
+      el.append(...[val].flat().filter(Boolean));
     } else {
       el[key] = val;
     }
   }
+
+  if (children.length) el.append(...children);
   return el;
 }
 

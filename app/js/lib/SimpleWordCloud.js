@@ -3,6 +3,8 @@
  * Uses flexbox layout instead of canvas positioning
  */
 
+import { elem } from './helpers.esm.js';
+
 /**
  * Render a word cloud into a container element
  * @param {HTMLElement} container - Container element
@@ -46,22 +48,20 @@ export function renderWordCloud(container, options) {
     const size = weightFactor(weight);
     const wordColor = color(word, weight);
 
-    const span = document.createElement('span');
-    span.textContent = word;
-    span.className = 'wordcloud-word';
-
-    Object.assign(span.style, {
-      fontSize: `${size}px`,
-      color: wordColor,
-      cursor: hover ? 'pointer' : 'default',
-      transition: 'transform 0.15s ease, opacity 0.15s ease',
-      display: 'inline-block',
-      lineHeight: '1.1',
-      whiteSpace: 'nowrap'
+    const span = elem('span', {
+      textContent: word,
+      className: 'wordcloud-word',
+      dataset: { word, weight },
+      style: {
+        fontSize: `${size}px`,
+        color: wordColor,
+        cursor: hover ? 'pointer' : 'default',
+        transition: 'transform 0.15s ease, opacity 0.15s ease',
+        display: 'inline-block',
+        lineHeight: '1.1',
+        whiteSpace: 'nowrap'
+      }
     });
-
-    span.dataset.word = word;
-    span.dataset.weight = weight;
 
     if (hover) {
       span.addEventListener('mouseenter', () => {

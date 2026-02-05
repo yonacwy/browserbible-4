@@ -27,14 +27,11 @@ export class Window {
     const parentNodeEl = parentNode?.nodeType ? parentNode : parentNode?.[0];
 
     this.node = elem('div', { className: `window ${className} active` });
-    this.closeContainer = elem('div', { className: 'close-container' });
     const closeBtn = elem('span', { className: 'close-button' });
-    this.closeContainer.appendChild(closeBtn);
-    this.tab = elem('div', { className: `window-tab ${className} active` });
-    const tabInner = elem('div', { className: 'window-tab-inner' });
-    const tabLabel = elem('span', { className: `window-tab-label ${className}-tab`, textContent: className });
-    tabInner.appendChild(tabLabel);
-    this.tab.appendChild(tabInner);
+    this.closeContainer = elem('div', { className: 'close-container' }, closeBtn);
+    const tabLabel = elem('span', { className: `window-tab-label ${className}-tab` }, className);
+    const tabInner = elem('div', { className: 'window-tab-inner' }, tabLabel);
+    this.tab = elem('div', { className: `window-tab ${className} active` }, tabInner);
 
     parentNodeEl.appendChild(this.node);
     this.node.appendChild(this.closeContainer);
@@ -340,7 +337,7 @@ export class WindowManager {
     this.splitters = [];
 
     for (let i = 0; i < this.windows.length - 1; i++) {
-      const splitter = Object.assign(document.createElement('div'), { className: 'window-splitter' });
+      const splitter = elem('div', { className: 'window-splitter' });
       this.nodeEl.appendChild(splitter);
       this.splitters.push(splitter);
 

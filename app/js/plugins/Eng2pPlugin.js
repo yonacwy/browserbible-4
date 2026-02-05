@@ -250,8 +250,7 @@ export const Eng2pPlugin = (app) => {
   engWindowBody.appendChild(configBlock);
 
   const configToolsBody = document.querySelector('#config-tools .config-body');
-  const button = elem('span', { className: 'config-button i18n', id: 'config-eng2p-button' });
-  button.setAttribute('data-i18n', '[html]plugins.eng2p.title');
+  const button = elem('span', { className: 'config-button i18n', id: 'config-eng2p-button', dataset: { i18n: '[html]plugins.eng2p.title' } });
 
   if (configToolsBody) {
     configToolsBody.appendChild(button);

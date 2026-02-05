@@ -22,6 +22,7 @@ import { TextComparisonWindow } from './TextComparisonWindow.js';
 import { StatisticsWindow } from './StatisticsWindow.js';
 import { DeafBibleWindow } from './DeafBibleWindow.js';
 import { MediaWindow } from './MediaWindow.js';
+import { NotesWindow } from './NotesWindow.js';
 
 const config = getConfig();
 registerWindowType({
@@ -109,6 +110,14 @@ registerWindowType({
   paramKeys: { textid: 't', fragmentid: 'v' }
 });
 
+registerWindowType({
+  param: 'notes',
+  className: 'NotesWindow',
+  WindowClass: NotesWindow,
+  displayName: 'Notes',
+  paramKeys: { noteId: 'n', filter: 'f' }
+});
+
 export {
   TextWindow,
   BibleWindow,
@@ -122,7 +131,8 @@ export {
   TextComparisonWindow,
   StatisticsWindow,
   DeafBibleWindow,
-  MediaWindow
+  MediaWindow,
+  NotesWindow
 };
 
 export default {
@@ -138,6 +148,7 @@ export default {
   StatisticsWindow,
   DeafBibleWindow,
   MediaWindow,
+  NotesWindow,
   Scroller,
   AudioController
 };

@@ -9,6 +9,7 @@ import { i18n } from '../lib/i18n.js';
 import { InfoWindow } from '../ui/InfoWindow.js';
 import { OT_BOOKS } from '../bible/BibleData.js';
 import { morphology } from '../bible/Morphology.js';
+import { elem } from '../lib/helpers.esm.js';
 
 // Article Strong's numbers to filter out when multiple words present
 const GREEK_ARTICLE = 3588;  // G3588 - the Greek definite article
@@ -104,9 +105,9 @@ export function LemmaPopupPlugin(app) {
         return response.json();
       })
       .then((data) => {
-        const html = buildLemmaHtml({ data, strongsNumber, morphKey, langConfig, textid });
+        const elements = buildLemmaElements({ data, strongsNumber, morphKey, langConfig, textid });
         bodyEl.classList.remove('loading-indicator');
-        bodyEl.insertAdjacentHTML('beforeend', html);
+        bodyEl.append(...elements);
         lemmaPopup.position(targetEl);
       })
       .catch(() => {
@@ -115,28 +116,27 @@ export function LemmaPopupPlugin(app) {
   }
 
   /**
-   * Build HTML for lemma display
+   * Build DOM elements for lemma display
    */
-  function buildLemmaHtml(opts) {
+  function buildLemmaElements(opts) {
     const { data, strongsNumber, morphKey, langConfig, textid } = opts;
     const { langPrefix, langCode, dir, morphType } = langConfig;
 
-    let html = `<div class="lemma-word">` +
-      `<span lang="${langCode}" dir="${dir}">${data.lemma}</span> ` +
-      `<span class="lemma-strongs" dir="ltr">(${strongsNumber})</span>` +
-      `</div>`;
+    const wordDiv = elem('div', { className: 'lemma-word' },
+      elem('span', { lang: langCode, dir }, data.lemma),
+      elem('span', { className: 'lemma-strongs', dir: 'ltr' }, `(${strongsNumber})`)
+    );
 
-    if (morphKey && morphology[morphType]) {
-      html += `<span class="lemma-morphology">${morphology[morphType].format(morphKey)}</span>`;
-    }
-
-    html += `<span class="lemma-findall" data-lemma="${langPrefix}${strongsNumber}" data-textid="${textid}">` +
-      `${i18n.t('plugins.lemmapopup.findalloccurrences', { count: data.frequency })}` +
-      `</span>`;
-
-    html += `<div class="lemma-outline">${data.outline}</div>`;
-
-    return html;
+    return [
+      wordDiv,
+      morphKey && morphology[morphType] && elem('span', { className: 'lemma-morphology', innerHTML: morphology[morphType].format(morphKey) }),
+      elem('span', {
+        className: 'lemma-findall',
+        textContent: i18n.t('plugins.lemmapopup.findalloccurrences', { count: data.frequency }),
+        dataset: { lemma: `${langPrefix}${strongsNumber}`, textid }
+      }),
+      elem('div', { className: 'lemma-outline', innerHTML: data.outline })
+    ].filter(Boolean);
   }
 
   /**

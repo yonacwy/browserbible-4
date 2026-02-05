@@ -40,7 +40,7 @@ export const MediaLibraryPlugin = (app) => {
       html += `<li><a href="${fullUrl}" target="_blank"><img src="${thumbUrl}" /></a></li>`;
     }
 
-    bodyEl.appendChild(elem('strong', { textContent: reference }));
+    bodyEl.appendChild(elem('strong', reference));
     bodyEl.appendChild(elem('ul', { className: 'inline-image-library-thumbs', innerHTML: html }));
     mediaPopup.setClickTargets([icon]);
     mediaPopup.position(icon).show();
@@ -138,8 +138,7 @@ export const MediaLibraryPlugin = (app) => {
 
             // add media
             if (mediaForVerse !== undefined) {
-              const iconEl = elem('span', { className: `inline-icon ${iconClassName} mediathumb` });
-              iconEl.setAttribute('data-mediafolder', mediaLibrary.folder);
+              const iconEl = elem('span', { className: `inline-icon ${iconClassName} mediathumb`, dataset: { mediafolder: mediaLibrary.folder } });
               const verseNumber = verse.querySelector('.verse-num, .v-num');
 
               if (verseNumber) {

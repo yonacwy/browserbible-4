@@ -3,9 +3,8 @@
  * Shows morphology info on hover over lemma elements
  */
 
-import { offset } from '../lib/helpers.esm.js';
+import { offset, elem } from '../lib/helpers.esm.js';
 import { getConfig } from '../core/config.js';
-const hasTouch = 'ontouchend' in document;
 import { morphology } from '../bible/Morphology.js';
 
 /**
@@ -20,14 +19,12 @@ export const LemmaInfoPlugin = (app) => {
     return {};
   }
 
-  const lemmaInfo = Object.assign(document.createElement('div'), { className: 'lemma-info' });
+  const lemmaInfo = elem('div', { className: 'lemma-info', style: { display: 'none' } });
   document.body.appendChild(lemmaInfo);
-  lemmaInfo.style.display = 'none';
 
-  if (!hasTouch) {
-    const windowsMain = document.querySelector('.windows-main');
+  const windowsMain = document.querySelector('.windows-main');
+  if (!'ontouchend' in document && windowsMain) {
 
-    if (windowsMain) {
       windowsMain.addEventListener('mouseover', (e) => {
         const l = e.target.closest('.BibleWindow l');
         if (!l) return;
@@ -44,10 +41,7 @@ export const LemmaInfoPlugin = (app) => {
           morphologyType = 'Greek';
         }
 
-        const morphInfo = (morph == null || morphologyType === '')
-          ? ''
-          : morphology[morphologyType].format(morph);
-
+        const morphInfo = (morph == null || morphologyType === '') ? '' : morphology[morphologyType].format(morph);
         if (morphInfo != null && morphInfo !== '') {
           lemmaInfo.innerHTML = morphInfo;
           lemmaInfo.style.display = '';
@@ -62,7 +56,6 @@ export const LemmaInfoPlugin = (app) => {
           lemmaInfo.style.display = 'none';
         }
       });
-    }
   }
 
   return {};
