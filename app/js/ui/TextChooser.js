@@ -198,7 +198,7 @@ export function TextChooser() {
 
   function selectText(textid) {
     storeRecentlyUsed(textid);
-    hide();
+    textChooser.hidePopover();
 
     getText(textid, function(data) {
       selectedTextInfo = data;

@@ -1,19 +1,19 @@
-export const FullScreenButton = () => {
-  const d = document;
-  if (!d.fullscreenEnabled) return null;
+export class FullScreenButton {
+  constructor(container) {
+    const d = document;
+    if (!d.fullscreenEnabled) return;
 
-  d.documentElement.classList.add('supports-fullscreen');
+    d.documentElement.classList.add('supports-fullscreen');
 
-  const btn = d.createElement('div');
-  btn.id = 'main-fullscreen-button';
+    this.btn = d.createElement('div');
+    this.btn.id = 'main-fullscreen-button';
 
-  d.querySelector('.windows-header')?.appendChild(btn);
+    container.appendChild(this.btn);
 
-  btn.addEventListener('click', () =>
-    d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen()
-  );
-
-  return btn;
-};
+    this.btn.addEventListener('click', () =>
+      d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen()
+    );
+  }
+}
 
 export default FullScreenButton;
