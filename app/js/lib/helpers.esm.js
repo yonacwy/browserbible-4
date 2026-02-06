@@ -80,6 +80,7 @@ export function elem(tag, props = {}, ...children) {
   // Text shorthand: elem('span', 'Hello')
   if (typeof props === 'string') {
     el.textContent = props;
+    children = children.filter(Boolean);
     if (children.length) el.append(...children);
     return el;
   }
@@ -90,12 +91,13 @@ export function elem(tag, props = {}, ...children) {
     } else if (key === 'dataset' && typeof val === 'object') {
       Object.assign(el.dataset, val);
     } else if (key === 'children') {
-      el.append(...[val].flat().filter(Boolean));
+      children.push(...[val].flat());
     } else {
       el[key] = val;
     }
   }
 
+  children = children.filter(Boolean);
   if (children.length) el.append(...children);
   return el;
 }
