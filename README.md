@@ -10,7 +10,7 @@ For pre-generated bibles and for bible source files check out arc.dbs.org, ebibl
 Download this collection of 9 freely shareable bibles with only **Mb they cover about 90% of the world's population.
 
 ```
-wget https://bibles.dbs.org/inscript/starter-pack.zip
+wget https://bibles.dbs.org/_assets/starter-pack.zip
 ```
 
 #### Customize your config file (optional)
