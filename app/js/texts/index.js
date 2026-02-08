@@ -25,6 +25,7 @@ import {
 import { LocalTextProvider } from './LocalTextProvider.js';
 import { FCBHTextProvider } from './FCBHTextProvider.js';
 import { DBSTextProvider } from './DBSTextProvider.js';
+import { CommentaryProvider } from './CommentaryProvider.js';
 
 import {
   TextSearch,
@@ -35,12 +36,14 @@ import {
 registerTextProvider('local', LocalTextProvider);
 registerTextProvider('fcbh', FCBHTextProvider);
 registerTextProvider('dbs', DBSTextProvider);
+registerTextProvider('commentary', CommentaryProvider);
 
 export const texts = {
   TextLoader,
   LocalTextProvider,
   FCBHTextProvider,
   DBSTextProvider,
+  CommentaryProvider,
   TextSearch,
   SearchIndexLoader,
   SearchTools,
@@ -66,6 +69,7 @@ export {
   LocalTextProvider,
   FCBHTextProvider,
   DBSTextProvider,
+  CommentaryProvider,
   TextSearch,
   SearchIndexLoader,
   SearchTools,

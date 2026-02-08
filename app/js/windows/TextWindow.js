@@ -121,8 +121,8 @@ export class TextWindowComponent extends BaseWindow {
   }
 
   async init() {
-    // Get text type from init data or attribute
-    this.state.textType = this.getParam('textType', 'bible');
+    // Get text type from init data or attribute (preserve constructor default)
+    this.state.textType = this.getParam('textType', this.state.textType || 'bible');
 
     // Initialize UI
     this.refs.navui.innerHTML = 'Reference';
@@ -317,7 +317,9 @@ export class TextWindowComponent extends BaseWindow {
     let textid = this.getParam('textid');
 
     if (!textid || textid === '') {
-      textid = this.config.newBibleWindowVersion;
+      textid = this.state.textType === 'commentary'
+        ? this.config.newCommentaryWindowTextId
+        : this.config.newBibleWindowVersion;
     }
 
     try {

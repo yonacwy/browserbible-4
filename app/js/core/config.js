@@ -23,7 +23,7 @@ const defaultConfig = {
 
   newBibleWindowVersion: 'ENGWEB',
   newWindowFragmentid: 'JN1_1',
-  newCommentaryWindowTextId: 'comm_eng_wesley',
+  newCommentaryWindowTextId: 'commentary:WESLEY',
   newComparisonWindowSourceVersion: 'ENGWEB',
   newComparisonWindowTargetVersion: 'ENGKJV',
 

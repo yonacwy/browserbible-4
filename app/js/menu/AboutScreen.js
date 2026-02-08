@@ -1,18 +1,17 @@
-import { getConfig } from '../core/config.js';
 import { i18n } from '../lib/i18n.js';
 import { MovableWindow } from '../ui/MovableWindow.js';
 import { elem } from '../lib/helpers.esm.js';
 
 const WINDOW_SIZE = { widthRatio: 0.8, heightRatio: 0.7 };
 
-async function fetchAboutContent(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return { data: await response.text(), url };
-}
+const aboutHtml = `
+<h1>Browser Bible</h1>
+<p>Bible study application with Greek and Hebrew.</p>
+<p>Developed by <a href="http://www.digitalbiblesociety.com/">Digital Bible Society</a> with major contributions from <a href="http://j.hn/">John Dyer</a> and <a href="http://ebible.org/">Michael Johnson</a>. Audio provided by <a href="https://www.faithcomesbyhearing.com/">Faith Comes by Hearing</a> and video by <a href="http://www.jesusfilm.org/">Jesus Film Project</a>.</p>
+<p>Source code: <a href="https://github.com/digitalbiblesociety/browserbible-3">Download from Github</a></p>
+`;
 
 export function AboutScreen() {
-  const config = getConfig();
   const aboutButton = elem('div', {
     className: 'main-menu-item about-logo i18n',
     textContent: 'About'
@@ -22,53 +21,19 @@ export function AboutScreen() {
   document.querySelector('#main-menu-features')?.appendChild(aboutButton);
 
   let aboutWindow = null;
-  let aboutBody = null;
-  let isLoaded = false;
 
   const getWindow = () => {
     if (!aboutWindow) {
       aboutWindow = new MovableWindow(500, 250, i18n.t('menu.labels.about'));
-      aboutBody = [aboutWindow.body].flat()[0];
+      const aboutBody = [aboutWindow.body].flat()[0];
       const aboutTitle = [aboutWindow.title].flat()[0];
 
       aboutBody.style.padding = '20px';
+      aboutBody.innerHTML = aboutHtml;
       aboutTitle.classList.add('i18n');
       aboutTitle.dataset.i18n = '[html]menu.labels.about';
     }
     return aboutWindow;
-  };
-
-  const showContent = (data, url) => {
-    if (data.includes('<html')) {
-      aboutBody.innerHTML = `<iframe style="border:0; width:${aboutBody.offsetWidth}px; height:${aboutBody.offsetHeight - 5}px" src="${url}"></iframe>`;
-      aboutBody.style.padding = '2px';
-    } else {
-      aboutBody.innerHTML = data;
-    }
-  };
-
-  const loadContent = async () => {
-    aboutBody.classList.add('loading-indicator');
-
-    const urls = [config.aboutPagePath];
-    if (config.baseContentUrl) {
-      urls.push(config.baseContentUrl + config.aboutPagePath);
-    }
-
-    for (const url of urls) {
-      try {
-        const { data } = await fetchAboutContent(url);
-        aboutBody.classList.remove('loading-indicator');
-        isLoaded = true;
-        showContent(data, url);
-        return;
-      } catch {
-        // Try next URL
-      }
-    }
-
-    aboutBody.classList.remove('loading-indicator');
-    console.log("Can't find about.html");
   };
 
   aboutButton.addEventListener('click', () => {
@@ -85,8 +50,6 @@ export function AboutScreen() {
       .size(WINDOW_SIZE.widthRatio * innerWidth, WINDOW_SIZE.heightRatio * innerHeight)
       .show()
       .center();
-
-    if (!isLoaded) loadContent();
   });
 
   return aboutButton;
