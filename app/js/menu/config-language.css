@@ -5,8 +5,7 @@
 	padding: 6px 5px 5px 10px;
 	cursor: pointer;
 	border-radius: 0;
-	-webkit-appearance: none;
-	-moz-appearance:none;
+	appearance: none;
 }
 
 #config-language:hover {

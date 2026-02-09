@@ -26,8 +26,8 @@
 }
 
 #config-theme-sepia {
-	background-color: #FBF0D9;
-	color: #5F4B32;
+	background-color: #FFD;
+	color: #543;
 }
 
 #config-theme-dark {
@@ -164,7 +164,6 @@
 	color: var(--color-text);
 }
 
-/* Comparison window dark mode overrides */
 .theme-dark .comparison-main {
 	background: var(--color-background);
 	color: var(--color-text);

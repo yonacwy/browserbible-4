@@ -100,6 +100,7 @@ const defaultConfig = {
   enableLemmaMatchPlugin: true,
   enableVerseMatchPlugin: true,
   enableVisualFilters: true,
+  enableHighlighterPlugin: true,
   enableMediaLibraryPlugin: true,
   enableEng2pPlugin: true,
   eng2pEnableAll: true,

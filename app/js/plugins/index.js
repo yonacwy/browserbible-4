@@ -15,6 +15,7 @@ import { CrossReferencePopupPlugin } from './CrossReferencePopupPlugin.js';
 import { NotesPopupPlugin } from './NotesPopupPlugin.js';
 import { MediaLibraryPlugin } from './MediaLibraryPlugin.js';
 import { Eng2pPlugin } from './Eng2pPlugin.js';
+import { HighlighterPlugin } from './HighlighterPlugin.js';
 
 // Register plugins
 registerPlugin('VerseMatchPlugin', VerseMatchPlugin);
@@ -26,6 +27,7 @@ registerPlugin('CrossReferencePopupPlugin', CrossReferencePopupPlugin);
 registerPlugin('NotesPopupPlugin', NotesPopupPlugin);
 registerPlugin('MediaLibraryPlugin', MediaLibraryPlugin);
 registerPlugin('Eng2pPlugin', Eng2pPlugin);
+registerPlugin('HighlighterPlugin', HighlighterPlugin);
 
 // Re-export all plugins
 export {
@@ -37,7 +39,8 @@ export {
   CrossReferencePopupPlugin,
   NotesPopupPlugin,
   MediaLibraryPlugin,
-  Eng2pPlugin
+  Eng2pPlugin,
+  HighlighterPlugin
 };
 
 export default {
@@ -49,5 +52,6 @@ export default {
   CrossReferencePopupPlugin,
   NotesPopupPlugin,
   MediaLibraryPlugin,
-  Eng2pPlugin
+  Eng2pPlugin,
+  HighlighterPlugin
 };

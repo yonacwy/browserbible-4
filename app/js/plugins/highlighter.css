@@ -1,0 +1,89 @@
+/* Highlighter Plugin */
+
+/* Menu button icon */
+.highlighter-toggle {
+	background-image: url(../../css/images/highlighter.svg);
+}
+
+.highlighter-toggle.active {
+	background-color: var(--color-highlight);
+	border-radius: 4px;
+}
+
+/* Body state when highlight mode is active */
+.highlighter-active .scroller-main {
+	cursor: url(../../css/images/cursor-highlighter.svg) 2 22, text;
+}
+
+/* Highlighted text marks */
+.user-highlight {
+	border-radius: 2px;
+	padding: 0 1px;
+	cursor: pointer;
+}
+
+/* Color palette popup */
+.highlighter-palette {
+	position: fixed;
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 8px;
+	background: var(--color-menu-background);
+	border: 1px solid var(--color-border);
+	border-radius: 20px;
+	box-shadow: var(--shadow-popup);
+}
+
+.highlighter-palette .color-swatch {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.highlighter-palette .color-swatch:hover {
+	transform: scale(1.2);
+	border-color: var(--color-text-muted);
+}
+
+.highlighter-palette .color-swatch.selected {
+	border-color: var(--color-text-dark);
+}
+
+.highlighter-palette .eraser {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	border: 2px solid var(--color-border);
+	background: var(--color-background);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	line-height: 1;
+	color: var(--color-text-muted);
+	transition: transform var(--transition-fast);
+}
+
+.highlighter-palette .eraser:hover {
+	transform: scale(1.2);
+	border-color: var(--color-error-dark);
+	color: var(--color-error-dark);
+}
+
+/* Dark theme adjustments */
+.theme-dark .highlighter-toggle.active,
+html.dark .highlighter-toggle.active {
+	background-color: var(--color-highlight);
+}
+
+/* Sepia theme adjustments */
+.theme-sepia .highlighter-toggle.active,
+html.sepia .highlighter-toggle.active {
+	background-color: var(--color-highlight);
+}

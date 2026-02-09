@@ -14,36 +14,55 @@ function generateId() {
  * Convert basic markdown formatting to HTML
  */
 function markdownToHtml(md) {
-  if (!md) return '';
+  if (!md || typeof md !== 'string') return '';
 
-  let html = md;
+  // Escape HTML
+  let html = md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  html = html.replace(/\r\n/g, '\n');
+
   // Headings
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  // Bold
-  html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-  // Italic
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  // Underline (markdown-style _text_)
-  html = html.replace(/(?<!\w)_(.+?)_(?!\w)/g, '<u>$1</u>');
-  // List items
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-  // Wrap consecutive <li> in <ul>
-  html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
-  // Paragraphs: double newlines
-  html = html.replace(/\n\n/g, '</p><p>');
-  // Single newlines to <br>
-  html = html.replace(/\n/g, '<br>');
-  // Wrap in paragraph tags if content exists
-  if (html && !html.startsWith('<h') && !html.startsWith('<ul>')) {
-    html = '<p>' + html + '</p>';
-  }
-  // Clean up empty paragraphs
-  html = html.replace(/<p>\s*<\/p>/g, '');
+  html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
 
-  return html;
+  // Lists
+  html = html.replace(
+    /(?:^|\n)(- .+(?:\n- .+)*)/g,
+    block => {
+      const items = block
+        .trim()
+        .split('\n')
+        .map(line => `<li>${line.replace(/^- /, '')}</li>`)
+        .join('');
+      return `\n<ul>${items}</ul>`;
+    }
+  );
+
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic
+  html = html.replace(/(^|[^*])\*(?!\*)(.+?)\*(?!\*)/g, '$1<em>$2</em>');
+
+  // Underline
+  html = html.replace(/(^|\W)_(.+?)_(\W|$)/g, '$1<u>$2</u>$3');
+
+  // Paragraphs
+  html = html
+    .split(/\n{2,}/)
+    .map(block => {
+      block = block.trim();
+      if (!block) return '';
+      if (/^<(h\d|ul|p|blockquote)/.test(block)) {
+        return block;
+      }
+      return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+    })
+    .join('\n');
+
+  return html.trim();
 }
+
 
 /**
  * Try to parse a date string back to a timestamp

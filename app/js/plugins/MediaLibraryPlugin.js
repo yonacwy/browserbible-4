@@ -10,6 +10,17 @@ import { Reference } from '../bible/BibleReference.js';
 import { mixinEventEmitter } from '../common/EventEmitter.js';
 
 /**
+ * Build the full URL for a media file
+ */
+function getMediaUrl(mediaLibrary, filename, ext, suffix) {
+  const config = getConfig();
+  if (mediaLibrary.baseUrl) {
+    return `${mediaLibrary.baseUrl}${filename}${suffix || '.' + ext}`;
+  }
+  return `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${filename}${suffix || '.' + ext}`;
+}
+
+/**
  * Create a media library plugin
  * @param {Object} app - Application instance
  * @returns {Object} Plugin API
@@ -35,24 +46,22 @@ export const MediaLibraryPlugin = (app) => {
     let html = '';
     for (const mediaInfo of mediaForVerse) {
       const ext = Array.isArray(mediaInfo.exts) ? mediaInfo.exts[0] : mediaInfo.exts;
-      const fullUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${mediaInfo.filename}.${ext}`;
-      const thumbUrl = fullUrl.replace('.jpg', '-thumb.jpg');
+      const fullUrl = getMediaUrl(mediaLibrary, mediaInfo.filename, ext, mediaLibrary.largeSuffix);
+      const thumbUrl = getMediaUrl(mediaLibrary, mediaInfo.filename, ext, mediaLibrary.thumbSuffix || null);
       html += `<li><a href="${fullUrl}" target="_blank"><img src="${thumbUrl}" /></a></li>`;
     }
 
-    bodyEl.appendChild(elem('strong', reference));
+    bodyEl.appendChild(elem('strong', {}, reference));
     bodyEl.appendChild(elem('ul', { className: 'inline-image-library-thumbs', innerHTML: html }));
-    mediaPopup.setClickTargets([icon]);
     mediaPopup.position(icon).show();
   };
 
-  const showVideo = (mediaLibrary, mediaForVerse) => {
+  const showVideo = (icon, mediaLibrary, mediaForVerse) => {
     const videoMediaInfo = mediaForVerse[0];
     const videoExt = Array.isArray(videoMediaInfo.exts) ? videoMediaInfo.exts[0] : videoMediaInfo.exts;
-    const videoUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${videoMediaInfo.filename}.${videoExt}`;
-    if (window.sofia?.globals?.showVideo) {
-      window.sofia.globals.showVideo(videoUrl, videoMediaInfo.name);
-    }
+    const videoUrl = getMediaUrl(mediaLibrary, videoMediaInfo.filename, videoExt);
+
+    showVideoPopup(icon, videoUrl, videoMediaInfo.name || videoMediaInfo.filename);
   };
 
   const showJfmVideo = (icon, mediaLibrary, mediaForVerse) => {
@@ -61,19 +70,56 @@ export const MediaLibraryPlugin = (app) => {
     const jfmMediaInfo = mediaForVerse[0];
     const JesusFilmMediaApi = window.JesusFilmMediaApi;
 
-    if (!JesusFilmMediaApi || !window.sofia?.globals?.showVideo) return;
+    if (!JesusFilmMediaApi) {
+      // Fallback to static file if API not available
+      const ext = Array.isArray(jfmMediaInfo.exts) ? jfmMediaInfo.exts[0] : jfmMediaInfo.exts;
+      if (ext) {
+        const staticUrl = getMediaUrl(mediaLibrary, jfmMediaInfo.filename, ext);
+        showVideoPopup(icon, staticUrl, jfmMediaInfo.name || jfmMediaInfo.filename);
+      }
+      return;
+    }
 
     JesusFilmMediaApi.getPlayer(lang, jfmMediaInfo.filename, (videoUrl, videoLang) => {
       if (videoUrl !== null) {
-        const langSuffix = lang !== videoLang ? '/' + lang : '';
-        const title = jfmMediaInfo.name + ' (' + videoLang + langSuffix + ')';
-        window.sofia.globals.showVideo(videoUrl, title);
+        const langSuffix = lang !== videoLang ? ' / ' + lang : '';
+        const title = (jfmMediaInfo.name || jfmMediaInfo.filename) + ' (' + videoLang + langSuffix + ')';
+        showVideoPopup(icon, videoUrl, title);
       } else {
         const ext = Array.isArray(jfmMediaInfo.exts) ? jfmMediaInfo.exts[0] : jfmMediaInfo.exts;
-        const staticUrl = `${config.baseContentUrl}content/media/${mediaLibrary.folder}/${jfmMediaInfo.filename}.${ext}`;
-        window.sofia.globals.showVideo(staticUrl, jfmMediaInfo.name);
+        if (ext) {
+          const staticUrl = getMediaUrl(mediaLibrary, jfmMediaInfo.filename, ext);
+          showVideoPopup(icon, staticUrl, jfmMediaInfo.name || jfmMediaInfo.filename);
+        }
       }
     });
+  };
+
+  const showVideoPopup = (icon, videoUrl, title) => {
+    const bodyEl = mediaPopup.body;
+    bodyEl.innerHTML = '';
+
+    if (title) {
+      bodyEl.appendChild(elem('strong', {}, title));
+    }
+
+    const video = elem('video', {
+      controls: true,
+      autoplay: true,
+      style: 'width:100%;max-height:300px;margin-top:8px;border-radius:4px;'
+    });
+    video.src = videoUrl;
+    bodyEl.appendChild(video);
+
+    // Stop playback when popup closes
+    const stopHandler = () => {
+      video.pause();
+      video.src = '';
+      mediaPopup.off('hide', stopHandler);
+    };
+    mediaPopup.on('hide', stopHandler);
+
+    mediaPopup.position(icon).show();
   };
 
   const setupMediaEvents = () => {
@@ -87,12 +133,17 @@ export const MediaLibraryPlugin = (app) => {
       const mediaFolder = icon.getAttribute('data-mediafolder');
       const verse = icon.closest('.verse, .v');
       const verseid = verse?.getAttribute('data-id') ?? '';
-      const reference = new Reference(verseid).toString();
+      const ref = Reference(verseid);
+      const reference = ref ? ref.toString() : verseid;
       const mediaLibrary = mediaLibraries.find(ml => ml.folder === mediaFolder);
-      const mediaForVerse = mediaLibrary.data[verseid];
+
+      if (!mediaLibrary) return;
+
+      const mediaForVerse = mediaLibrary.data?.[verseid];
+      if (!mediaForVerse || mediaForVerse.length === 0) return;
 
       if (mediaLibrary.type === 'image') showImagePopup(icon, mediaLibrary, mediaForVerse, reference);
-      else if (mediaLibrary.type === 'video') showVideo(mediaLibrary, mediaForVerse);
+      else if (mediaLibrary.type === 'video') showVideo(icon, mediaLibrary, mediaForVerse);
       else if (mediaLibrary.type === 'jfm') showJfmVideo(icon, mediaLibrary, mediaForVerse);
     });
   };
@@ -168,24 +219,6 @@ export const MediaLibraryPlugin = (app) => {
       setupMediaEvents();
       addMedia();
     });
-  }
-
-  const mediaPopupBody = mediaPopup.body;
-
-  // Use global handlers if available
-  if (window.sofia?.globals) {
-    if (window.sofia.globals.mediaImageClick) {
-      mediaPopupBody.addEventListener('click', (e) => {
-        const target = e.target.closest('.inline-image-library-thumbs a');
-        if (target) window.sofia.globals.mediaImageClick.call(target, e);
-      });
-    }
-    if (window.sofia.globals.mediaVideoClick) {
-      mediaPopupBody.addEventListener('click', (e) => {
-        const target = e.target.closest('.inline-video-library-thumbs a');
-        if (target) window.sofia.globals.mediaVideoClick.call(target, e);
-      });
-    }
   }
 
   let ext = {};

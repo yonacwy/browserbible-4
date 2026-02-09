@@ -1,4 +1,3 @@
-/* toggles */
 .config-toggle {
 	width: 30px;
 	float: left;
@@ -33,12 +32,7 @@
 }
 
 .config-toggle label:hover {
-	border-color: #7491CE;
-}
-
-/* VERSES */
-#config-toggle-verses label {
-	background-image: url(../../css/images/toggles/verses.svg);
+	border-color: #79C;
 }
 
 .toggle-verses-off .verse-num,
@@ -46,17 +40,11 @@
 	display: none;
 }
 
-/* CHAPTERS */
-#config-toggle-chapters label {
-	background-image: url(../../css/images/toggles/chapters.svg);
-}
-
 .toggle-chapters-off .c,
 .toggle-chapters-off .chapter-num {
 	display: none;
 }
 
-/* special cases for verse 1 */
 .toggle-chapters-off .v-1 {
 	display: inline;
 }
@@ -65,18 +53,9 @@
 	display: none;
 }
 
-/* always show Psalm headings */
 .PS .toggle-chapters-off .c,
 .PS .toggle-chapters-off .chapter-num {
 	display: block;
-}
-
-/* JUSTIFY */
-/* Justification really only makes sense if you can also do decent hyphenation.
- * Chrome does not yet (as of v35) support hyphenation, but FF, Safari, and IE
- * all have for some time. The html lang= attribute must be correctly set. */
-#config-toggle-justify label {
-	background-image: url(../../css/images/toggles/justify.svg);
 }
 
 .toggle-justify-on .section {
@@ -92,20 +71,18 @@
 	hyphens: auto;
 }
 
-/* TITLES */
-#config-toggle-titles label {
-	background-image: url(../../css/images/toggles/titles.svg);
-}
+#config-toggle-verses label 		{background-image: url(../../css/images/toggles/verses.svg)}
+#config-toggle-chapters label 		{background-image: url(../../css/images/toggles/chapters.svg)}
+#config-toggle-justify label 		{background-image: url(../../css/images/toggles/justify.svg)}
+#config-toggle-titles label 		{background-image: url(../../css/images/toggles/titles.svg)}
+#config-toggle-wordsofchrist label 	{background-image: url(../../css/images/toggles/christwords.svg)}
+#config-toggle-notes label 			{background-image: url(../../css/images/toggles/notes.svg);}
+#config-toggle-media label 			{background-image: url(../../css/images/toggles/media.svg)}
 
 .toggle-titles-off .is1,
 .toggle-titles-off .is2,
 .toggle-titles-off .s {
 	display: none;
-}
-
-/* WORD OF JESUS */
-#config-toggle-wordsofchrist label {
-	background-image: url(../../css/images/toggles/christwords.svg);
 }
 
 .toggle-wordsofchrist-off .woj,
@@ -114,21 +91,10 @@
 	color: inherit;
 }
 
-/* NOTES	*/
-#config-toggle-notes label {
-	background-image: url(../../css/images/toggles/notes.svg);
-}
-
 .toggle-notes-off .note,
 .toggle-notes-off .cf {
 	display: none;
 }
-
-/* MEDIA	*/
-#config-toggle-media label {
-	background-image: url(../../css/images/toggles/media.svg);
-}
-
 .toggle-media-off .image-icon,
 .toggle-media-off .map-icon,
 .toggle-media-off .video-icon {
