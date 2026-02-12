@@ -6,7 +6,7 @@
 import { elem } from '../lib/helpers.esm.js';
 import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
-import { PlaceKeeper } from '../common/Navigation.js';
+import { PlaceKeeper } from '../common/PlaceKeeper.js';
 
 /**
  * Create toggle settings controls
@@ -22,31 +22,29 @@ export function ConfigToggles(_parentNode, _menu) {
   const toggleDefaults = config.settingToggleDefaults ?? [];
 
   const setToggle = (toggleId, checked) => {
-    PlaceKeeper?.storePlace();
+    PlaceKeeper.preservePlace(() => {
+      const toggle = document.querySelector(`#config-toggle-${toggleId}`);
+      const onClass = `toggle-${toggleId}-on`;
+      const offClass = `toggle-${toggleId}-off`;
 
-    const toggle = document.querySelector(`#config-toggle-${toggleId}`);
-    const onClass = `toggle-${toggleId}-on`;
-    const offClass = `toggle-${toggleId}-off`;
-
-    if (checked === true || checked === 'true') {
-      if (toggle) {
-        toggle.classList.add('toggle-on');
-        const input = toggle.querySelector('input');
-        if (input) input.checked = true;
+      if (checked === true || checked === 'true') {
+        if (toggle) {
+          toggle.classList.add('toggle-on');
+          const input = toggle.querySelector('input');
+          if (input) input.checked = true;
+        }
+        document.body.classList.add(onClass);
+        document.body.classList.remove(offClass);
+      } else {
+        if (toggle) {
+          toggle.classList.remove('toggle-on');
+          const input = toggle.querySelector('input');
+          if (input) input.checked = false;
+        }
+        document.body.classList.remove(onClass);
+        document.body.classList.add(offClass);
       }
-      document.body.classList.add(onClass);
-      document.body.classList.remove(offClass);
-    } else {
-      if (toggle) {
-        toggle.classList.remove('toggle-on');
-        const input = toggle.querySelector('input');
-        if (input) input.checked = false;
-      }
-      document.body.classList.remove(onClass);
-      document.body.classList.add(offClass);
-    }
-
-    PlaceKeeper?.restorePlace();
+    });
 
     AppSettings.setValue(toggleId, { checked });
   };

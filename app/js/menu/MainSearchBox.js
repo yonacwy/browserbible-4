@@ -7,7 +7,8 @@ import { elem } from '../lib/helpers.esm.js';
 import { Reference } from '../bible/BibleReference.js';
 import { getApp } from '../core/registry.js';
 import { getConfig } from '../core/config.js';
-import { PlaceKeeper, TextNavigation } from '../common/Navigation.js';
+import { PlaceKeeper } from '../common/PlaceKeeper.js';
+import { TextNavigation } from '../common/TextNavigation.js';
 
 /**
  * Get the current Bible version from the first Bible window
@@ -54,10 +55,10 @@ export function MainSearchBox(parentNode, _menu) {
 
   const doSearch = (searchText) => {
     const app = getApp();
-    PlaceKeeper?.storePlace();
-    const textid = getCurrentVersion();
-    app?.windowManager?.add('SearchWindow', { searchtext: searchText, textid });
-    PlaceKeeper?.restorePlace();
+    PlaceKeeper.preservePlace(() => {
+      const textid = getCurrentVersion();
+      app?.windowManager?.add('SearchWindow', { searchtext: searchText, textid });
+    });
     searchInput.value = '';
     hideSuggestions();
   };

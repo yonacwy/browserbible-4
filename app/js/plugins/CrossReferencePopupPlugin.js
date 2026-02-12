@@ -8,7 +8,8 @@ import { InfoWindow } from '../ui/InfoWindow.js';
 const hasTouch = 'ontouchend' in document;
 import { Reference } from '../bible/BibleReference.js';
 import { mixinEventEmitter } from '../common/EventEmitter.js';
-import { PlaceKeeper, TextNavigation } from '../common/Navigation.js';
+import { PlaceKeeper } from '../common/PlaceKeeper.js';
+import { TextNavigation } from '../common/TextNavigation.js';
 
 // Store global handlers for cross-plugin communication
 let handleBibleRefClick = null;

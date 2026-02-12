@@ -6,7 +6,7 @@
 import { elem } from '../lib/helpers.esm.js';
 import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
-import { PlaceKeeper } from '../common/Navigation.js';
+import { PlaceKeeper } from '../common/PlaceKeeper.js';
 
 /**
  * Create font size setting controls
@@ -63,19 +63,17 @@ export function FontSizeSettings(_parentNode, _menu) {
 
   // Define setFontSize before handleFontSizeChange
   const setFontSize = (newFontSize) => {
-    PlaceKeeper?.storePlace();
+    PlaceKeeper.preservePlace(() => {
+      // remove all others
+      for (let size = fontSizeMin; size <= fontSizeMax; size += fontSizeStep) {
+        const className = `config-font-size-${size}`;
+        document.body.classList.remove(className);
+      }
 
-    // remove all others
-    for (let size = fontSizeMin; size <= fontSizeMax; size += fontSizeStep) {
-      const className = `config-font-size-${size}`;
-      document.body.classList.remove(className);
-    }
+      document.body.classList.add(`config-font-size-${newFontSize}`);
 
-    document.body.classList.add(`config-font-size-${newFontSize}`);
-
-    AppSettings.setValue(fontSizeKey, { fontSize: newFontSize });
-
-    PlaceKeeper?.restorePlace();
+      AppSettings.setValue(fontSizeKey, { fontSize: newFontSize });
+    });
   };
 
   // handleFontSizeChange needs `this` context, so keep as regular function

@@ -6,7 +6,7 @@
 import { elem } from '../lib/helpers.esm.js';
 import { getConfig } from '../core/config.js';
 import AppSettings from '../common/AppSettings.js';
-import { PlaceKeeper } from '../common/Navigation.js';
+import { PlaceKeeper } from '../common/PlaceKeeper.js';
 
 const toSlug = (str) => str.replace(/\s+/g, '-').toLowerCase();
 
@@ -51,19 +51,17 @@ export function FontFamilySettings(_parentNode, _menu) {
 
   // Define setFontFamily before usage
   const setFontFamily = (newFontStackName) => {
-    PlaceKeeper?.storePlace();
+    PlaceKeeper.preservePlace(() => {
+      // remove all others
+      for (const fontStackName of fontFamilyStackNames) {
+        const className = `config-font-family-${toSlug(fontStackName)}`;
+        document.body.classList.remove(className);
+      }
 
-    // remove all others
-    for (const fontStackName of fontFamilyStackNames) {
-      const className = `config-font-family-${toSlug(fontStackName)}`;
-      document.body.classList.remove(className);
-    }
+      document.body.classList.add(`config-font-family-${toSlug(newFontStackName)}`);
 
-    document.body.classList.add(`config-font-family-${toSlug(newFontStackName)}`);
-
-    AppSettings.setValue(fontFamilyKey, { fontName: newFontStackName });
-
-    PlaceKeeper?.restorePlace();
+      AppSettings.setValue(fontFamilyKey, { fontName: newFontStackName });
+    });
   };
 
   if (!config.enableFontFamilySelector) {

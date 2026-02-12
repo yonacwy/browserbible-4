@@ -5,7 +5,7 @@
 
 import { getConfig } from '../core/config.js';
 import { getAllWindowTypes, getApp } from '../core/registry.js';
-import { PlaceKeeper } from '../common/Navigation.js';
+import { PlaceKeeper } from '../common/PlaceKeeper.js';
 
 // Store init data for buttons
 const buttonData = new WeakMap();
@@ -86,11 +86,11 @@ export function AddWindowButton(_parentNode, _menu) {
         }
       }
 
-      if (PlaceKeeper) PlaceKeeper.storePlace();
-      if (app?.windowManager) {
-        app.windowManager.add(settings.type, settings.data);
-      }
-      if (PlaceKeeper) PlaceKeeper.restorePlace();
+      PlaceKeeper.preservePlace(() => {
+        if (app?.windowManager) {
+          app.windowManager.add(settings.type, settings.data);
+        }
+      });
     });
   }
 

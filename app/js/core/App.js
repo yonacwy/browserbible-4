@@ -15,7 +15,8 @@ import {
   getAllPlugins,
   addPluginInstance
 } from './registry.js';
-import { TextNavigation, PlaceKeeper } from '../common/Navigation.js';
+import { TextNavigation } from '../common/TextNavigation.js';
+import { PlaceKeeper } from '../common/PlaceKeeper.js';
 import { i18n } from '../lib/i18n.js';
 
 /**
@@ -132,27 +133,25 @@ export class App {
    * Handle window resize and orientation changes
    */
   resize() {
-    PlaceKeeper?.storePlace();
+    PlaceKeeper.preservePlace(() => {
+      if (this.windowManager?.getWindows().length === 1) {
+        document.body.classList.add('one-window');
+      } else {
+        document.body.classList.remove('one-window');
+      }
 
-    if (this.windowManager?.getWindows().length === 1) {
-      document.body.classList.add('one-window');
-    } else {
-      document.body.classList.remove('one-window');
-    }
+      const width = window.innerWidth;
+      const height = window.innerHeight;
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+      const mainStyle = window.getComputedStyle(this.main);
+      const areaHeight = height - this.header.offsetHeight + this.footer.offsetHeight;
+      const areaWidth = width - parseInt(mainStyle.marginLeft, 10) - parseInt(mainStyle.marginRight, 10);
 
-    const mainStyle = window.getComputedStyle(this.main);
-    const areaHeight = height - this.header.offsetHeight + this.footer.offsetHeight;
-    const areaWidth = width - parseInt(mainStyle.marginLeft, 10) - parseInt(mainStyle.marginRight, 10);
+      this.main.style.height = `${areaHeight}px`;
+      this.main.style.width = `${areaWidth}px`;
 
-    this.main.style.height = `${areaHeight}px`;
-    this.main.style.width = `${areaWidth}px`;
-
-    this.windowManager?.size(areaWidth, areaHeight);
-
-    PlaceKeeper?.restorePlace();
+      this.windowManager?.size(areaWidth, areaHeight);
+    });
   }
 
   _getWindowSettings() {

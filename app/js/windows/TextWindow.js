@@ -9,7 +9,7 @@ import { AudioController } from './AudioController.js';
 import { getGlobalTextChooser } from '../ui/TextChooser.js';
 import { getGlobalTextNavigator } from '../ui/TextNavigator.js';
 import { getText, loadTexts } from '../texts/TextLoader.js';
-import { TextNavigation } from '../common/Navigation.js';
+import { TextNavigation } from '../common/TextNavigation.js';
 
 export { registerWindowComponent } from './BaseWindow.js';
 

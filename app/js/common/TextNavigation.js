@@ -1,50 +1,5 @@
-/**
- * Navigation
- * Browser history integration and scroll position preservation
- */
-
 import { mixinEventEmitter } from './EventEmitter.js';
 import { getApp } from '../core/registry.js';
-
-/**
- * Preserves scroll position during resize by storing and restoring the current location
- */
-class PlaceKeeperClass {
-  constructor() {
-    this.currentWindow = null;
-    this.currentData = null;
-  }
-
-  /**
-   * Store current scroll position before resize
-   */
-  storePlace() {
-    this.currentData = this.getFirstLocation();
-  }
-
-  getFirstLocation() {
-    const app = getApp();
-    this.currentWindow = app?.windowManager?.getWindows().find(w => w.className === 'BibleWindow') ?? null;
-    return this.currentWindow?.getData() ?? null;
-  }
-
-  /**
-   * Restore scroll position after resize
-   */
-  restorePlace() {
-    this.currentWindow?.trigger('globalmessage', {
-      type: 'globalmessage',
-      target: this.currentWindow,
-      data: {
-        messagetype: 'nav',
-        type: 'bible',
-        locationInfo: this.currentData
-      }
-    });
-  }
-}
-
-export const PlaceKeeper = new PlaceKeeperClass();
 
 /**
  * Manages browser history for Bible navigation with back/forward support
@@ -66,12 +21,14 @@ class TextNavigationClass {
     const locationid = e.state?.locationid;
     if (locationid === undefined) return;
 
+    const index = this.locations.lastIndexOf(locationid);
     let type = '';
-    if (this.locationIndex > 0 && this.locations[this.locationIndex - 1] === locationid) {
-      this.locationIndex--;
+
+    if (index !== -1 && index < this.locationIndex) {
+      this.locationIndex = index;
       type = 'back';
-    } else if (this.locationIndex < this.locations.length - 1 && this.locations[this.locationIndex + 1] === locationid) {
-      this.locationIndex++;
+    } else if (index !== -1 && index > this.locationIndex) {
+      this.locationIndex = index;
       type = 'forward';
     }
 
@@ -95,8 +52,9 @@ class TextNavigationClass {
    * @param {string} type - Navigation type
    */
   locationChange(locationid, type) {
+    this.locations = this.locations.slice(0, this.locationIndex + 1);
     this.locations.push(locationid);
-    this.locationIndex++;
+    this.locationIndex = this.locations.length - 1;
     window.history.pushState({ locationid }, null, window.location.href);
     this.trigger('locationchange', { type });
   }
@@ -118,27 +76,21 @@ class TextNavigationClass {
     });
   }
 
-  /** Navigate back in history */
   back() {
     window.history.go(-1);
   }
 
-  /** Navigate forward in history */
   forward() {
     window.history.go(1);
   }
 
-  /** @returns {string[]} All stored locations */
   getLocations() {
     return this.locations;
   }
 
-  /** @returns {number} Current position in history */
   getLocationIndex() {
     return this.locationIndex;
   }
 }
 
 export const TextNavigation = new TextNavigationClass();
-
-export default { PlaceKeeper, TextNavigation };

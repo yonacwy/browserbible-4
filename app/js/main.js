@@ -29,7 +29,8 @@ import registry, {
 // ============================================
 import { EventEmitter, mixinEventEmitter, EventEmitterMixin } from './common/EventEmitter.js';
 import AppSettings from './common/AppSettings.js';
-import { PlaceKeeper, TextNavigation } from './common/Navigation.js';
+import { PlaceKeeper } from './common/PlaceKeeper.js';
+import { TextNavigation } from './common/TextNavigation.js';
 
 // ============================================
 // App Module Imports

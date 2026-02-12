@@ -5,7 +5,7 @@
 
 import { getConfig } from '../core/config.js';
 import { Reference } from '../bible/BibleReference.js';
-import { TextNavigation } from '../common/Navigation.js';
+import { TextNavigation } from '../common/TextNavigation.js';
 
 export function NavigationButtons() {
   const config = getConfig();

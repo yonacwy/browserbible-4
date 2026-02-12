@@ -20,10 +20,8 @@ export function ConfigButton(_parentNode, _menu) {
   const mainMenuFeatures = document.querySelector('#main-menu-features');
 
   const configWindow = new MovableWindow(300, 380, i18n.t('menu.labels.settings'), 'config-window');
-
   mainMenuFeatures?.appendChild(configButton);
 
-  // Handle popover toggle events (fires on light dismiss - click outside or Escape)
   configWindow.onToggle((e) => {
     if (e.newState === 'closed') {
       container?.classList.remove('blur');
@@ -33,10 +31,7 @@ export function ConfigButton(_parentNode, _menu) {
   });
 
   const showConfig = () => {
-    configWindow
-      .show()
-      .center();
-
+    configWindow.show().center();
     // Properly close the main menu popover
     const mainMenuDropdown = document.querySelector('#main-menu-dropdown');
     if (mainMenuDropdown?.matches(':popover-open')) {

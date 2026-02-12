@@ -7,15 +7,11 @@ import { EventEmitter, mixinEventEmitter, EventEmitterMixin } from './EventEmitt
 
 import AppSettings from './AppSettings.js';
 
-import { PlaceKeeper, TextNavigation } from './Navigation.js';
-
 export {
   EventEmitter,
   mixinEventEmitter,
   EventEmitterMixin,
   AppSettings,
-  PlaceKeeper,
-  TextNavigation
 };
 
 export default {
@@ -23,6 +19,4 @@ export default {
   mixinEventEmitter,
   EventEmitterMixin,
   AppSettings,
-  PlaceKeeper,
-  TextNavigation
 };
