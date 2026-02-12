@@ -19,13 +19,10 @@ import {
 	getBookNames,
 	getCombinedBookNames,
 	type CanonicalBookName,
-	type LanguageCode,
-	type BookNamePatterns
+	type LanguageCode
 } from './bookNames.js';
 
 import {
-	config as defaultConfig,
-	mergeConfig,
 	type VerseDetectionConfig,
 	type PartialVerseDetectionConfig
 } from './config.js';
@@ -233,9 +230,9 @@ function parseVerseReference(match: RegExpExecArray, variationMap: Map<string, V
 	// Parse the chapter:verse reference
 	const parsed: ParsedVerseReference = {
 		original: fullMatch,
-		book: lookupResult?.canonical || bookMatch,
+		book: lookupResult?.canonical ?? bookMatch,
 		bookVariation: bookMatch.replace(/\.$/, ''),
-		detectedLanguage: lookupResult?.language || 'en',
+		detectedLanguage: lookupResult?.language ?? 'en',
 		reference: referenceMatch,
 		chapters: [],
 		startIndex: match.index + (match[0].length - match[1].length),
@@ -281,7 +278,7 @@ export function VerseDetectionPlugin(
 	options: VerseDetectionPluginOptions = {}
 ): VerseDetectionPluginAPI {
 	// Determine language(s) to use
-	let primaryLanguage = options.language || detectDocumentLanguage();
+	let primaryLanguage = options.language ?? detectDocumentLanguage();
 
 	// Validate primary language
 	if (!SUPPORTED_LANGUAGES.includes(primaryLanguage as LanguageCode)) {
@@ -560,7 +557,7 @@ export async function initVerseDetection(
 
 	// Create the detector
 	const detectorOptions: VerseDetectionPluginOptions = {
-		language: finalConfig.language.autoDetect ? undefined : (finalConfig.language.primary || undefined),
+		language: finalConfig.language.autoDetect ? undefined : (finalConfig.language.primary ?? undefined),
 		additionalLanguages: finalConfig.language.additional
 	};
 	const detector = VerseDetectionPlugin(app, detectorOptions);
@@ -624,7 +621,7 @@ export async function initVerseDetection(
 			}
 
 			// Get book code and IDs for data attributes
-			const bookCode = BOOK_CODES[verse.book] || '';
+			const bookCode = BOOK_CODES[verse.book as CanonicalBookName] ?? '';
 			const chapterMatch = verse.reference?.match(/^(\d+)/);
 			const verseMatch = verse.reference?.match(/:(\d+)/);
 			const chapter = chapterMatch ? chapterMatch[1] : '';
@@ -669,7 +666,7 @@ export async function initVerseDetection(
 					}
 
 					// Skip if no verse references
-					if (!detector.containsVerses(node.textContent || '')) {
+					if (!detector.containsVerses(node.textContent ?? '')) {
 						return NodeFilter.FILTER_REJECT;
 					}
 
@@ -686,7 +683,7 @@ export async function initVerseDetection(
 
 		// Process nodes (replace text with HTML)
 		nodesToProcess.forEach((textNode) => {
-			const html = processText(textNode.textContent || '');
+			const html = processText(textNode.textContent ?? '');
 			const span = document.createElement('span');
 			span.innerHTML = html;
 			textNode.parentNode?.replaceChild(span, textNode);

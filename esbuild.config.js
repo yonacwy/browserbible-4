@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild';
 import { existsSync, readdirSync, statSync, writeFileSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 
 const isDev = process.argv.includes('--dev');
 

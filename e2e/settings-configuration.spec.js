@@ -24,9 +24,6 @@ test.describe('Settings & Configuration - Font Settings', () => {
   });
 
   test('should increase font size and verify text scales', async ({ page }) => {
-    // Get initial font size from body class
-    const initialBodyClasses = await page.locator('body').getAttribute('class');
-
     // Open settings
     const mainMenuButton = page.locator('#main-menu-button');
     await mainMenuButton.click();

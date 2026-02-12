@@ -69,7 +69,7 @@ export function handleSocialShare(
 	const plainText = content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 	const shareText = `"${plainText}" - ${reference}`;
 	const parsed = parseReference(reference);
-	const shareUrl = `${appBaseUrl}#${parsed?.sectionId || ''}`;
+	const shareUrl = `${appBaseUrl}#${parsed?.sectionId ?? ''}`;
 
 	switch (platform) {
 		case 'facebook':

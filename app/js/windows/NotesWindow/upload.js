@@ -89,11 +89,11 @@ function parseMarkdownImport(text) {
   const sections = text.split(/\n---\n/);
   const notes = [];
 
-  for (let section of sections) {
-    section = section.trim();
-    if (!section) continue;
+  for (const section of sections) {
+    const trimmed = section.trim();
+    if (!trimmed) continue;
 
-    const lines = section.split('\n');
+    const lines = trimmed.split('\n');
     let title = '';
     let reference = null;
     let referenceDisplay = null;
@@ -182,11 +182,11 @@ function parseHeaderSections(text, divider, versePattern) {
   const sections = text.split(divider);
   const notes = [];
 
-  for (let section of sections) {
-    section = section.trim();
-    if (!section) continue;
+  for (const section of sections) {
+    const trimmed = section.trim();
+    if (!trimmed) continue;
 
-    const lines = section.split('\n');
+    const lines = trimmed.split('\n');
     let title = '';
     let reference = null;
     let referenceDisplay = null;

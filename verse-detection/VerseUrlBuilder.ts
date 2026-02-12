@@ -5,6 +5,7 @@
  */
 
 import { BOOK_CODES } from './BookCodes.js';
+import type { CanonicalBookName } from './bookNames.js';
 import type { VerseDetectionConfig } from './config.js';
 
 /** Parsed verse reference for URL building */
@@ -17,7 +18,7 @@ export interface VerseReferenceForUrl {
 
 /** Configuration for text ID selection */
 export interface TextIdConfig {
-	textId?: string;
+	textId?: string | null;
 	textIdsByLanguage?: Record<string, string>;
 	autoSelectByLanguage?: boolean;
 }
@@ -27,7 +28,7 @@ export interface GetTextIdConfig {
 	contentSource?: TextIdConfig;
 	defaultTextId?: string | null;
 	language?: {
-		primary?: string;
+		primary?: string | null;
 	};
 }
 
@@ -101,7 +102,7 @@ export function getTextId(
 	// Auto-select based on primary language
 	if (contentConfig?.autoSelectByLanguage) {
 		const langConfig = config.language;
-		const language = langConfig?.primary || 'en';
+		const language = langConfig?.primary ?? 'en';
 
 		// Try exact language match first
 		if (textIdsByLanguage[language]) {
@@ -144,7 +145,7 @@ export function buildVerseUrl(
 	const textId = verse.version
 		? verse.version
 		: getTextIdForLanguage(
-			verse.detectedLanguage || 'en',
+			verse.detectedLanguage ?? 'en',
 			textIdsByLanguage,
 			config.defaultTextId
 		);
@@ -156,7 +157,7 @@ export function buildVerseUrl(
 	const verseNum = verseMatch ? verseMatch[1] : '';
 
 	// Get book code
-	const bookCode = BOOK_CODES[verse.book] || '';
+	const bookCode = BOOK_CODES[verse.book as CanonicalBookName] ?? '';
 	const sectionId = bookCode && chapter ? `${bookCode}${chapter}` : '';
 	const fragmentId = sectionId && verseNum ? `${sectionId}_${verseNum}` : sectionId;
 

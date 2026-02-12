@@ -67,7 +67,7 @@ export const DEFAULT_LANGUAGE: LanguageCode = 'en';
  * @returns Book name patterns for that language
  */
 export function getBookNames(langCode: string | null | undefined): BookNamePatterns {
-	const lang = (langCode?.toLowerCase()?.split('-')[0] || DEFAULT_LANGUAGE) as LanguageCode;
+	const lang = (langCode?.toLowerCase()?.split('-')[0] ?? DEFAULT_LANGUAGE) as LanguageCode;
 	return BOOK_NAMES[lang] || BOOK_NAMES[DEFAULT_LANGUAGE];
 }
 

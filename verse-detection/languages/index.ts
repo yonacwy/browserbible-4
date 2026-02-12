@@ -11,7 +11,7 @@
  *    import es from '@browserbible/verse-detection/languages/es.json';
  */
 
-import type { BookNamePatterns, CanonicalBookName, LanguageCode } from './types.js';
+import type { BookNamePatterns, LanguageCode } from './types.js';
 
 // Re-export types
 export type { BookNamePatterns, CanonicalBookName, LanguageCode } from './types.js';

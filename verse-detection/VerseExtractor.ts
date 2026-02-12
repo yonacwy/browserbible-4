@@ -41,7 +41,7 @@ export function processVerseContent(verseEl: HTMLElement, footnotes: ExtractedFo
 	clone.querySelectorAll('.note, .cf').forEach(note => {
 		// Get the key (footnote marker)
 		const keyEl = note.querySelector('.key');
-		const key = keyEl?.textContent?.trim() || '*';
+		const key = keyEl?.textContent?.trim() ?? '*';
 
 		// Get the footnote text
 		const textEl = note.querySelector('.text');
@@ -58,7 +58,7 @@ export function processVerseContent(verseEl: HTMLElement, footnotes: ExtractedFo
 						const t = child.textContent?.trim();
 						if (t) textParts.push(t);
 					} else if (child.nodeType === Node.ELEMENT_NODE) {
-						textParts.push((child as HTMLElement).innerHTML || child.textContent || '');
+						textParts.push((child as HTMLElement).innerHTML ?? child.textContent ?? '');
 					}
 				}
 			});
@@ -124,7 +124,7 @@ export function extractVerses(
 
 	const verses: string[] = [];
 	const start = parsed.startVerse;
-	const end = parsed.endVerse || start;
+	const end = parsed.endVerse ?? start;
 
 	for (let v = start; v <= end; v++) {
 		const verseId = `${parsed.sectionId}_${v}`;

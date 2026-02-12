@@ -60,7 +60,7 @@ export function normalizeLangCode(lang3: string | undefined, langName?: string):
 	}
 
 	// Return the 3-letter code as-is if we can't map it
-	return lang3?.toLowerCase() || null;
+	return lang3?.toLowerCase() ?? null;
 }
 
 /**
@@ -69,7 +69,7 @@ export function normalizeLangCode(lang3: string | undefined, langName?: string):
  * @returns Display name (e.g., "English" for "en")
  */
 export function getLanguageName(langCode: string | null | undefined): string {
-	return LANGUAGE_DISPLAY_NAMES[langCode || ''] || langCode || 'this language';
+	return LANGUAGE_DISPLAY_NAMES[langCode ?? ''] ?? langCode ?? 'this language';
 }
 
 /**
@@ -95,7 +95,7 @@ export function buildTextIdsByLanguage(
 
 	for (const textInfo of textsData) {
 		// Skip non-Bible texts (commentaries, etc.)
-		const textType = textInfo.type || 'bible';
+		const textType = textInfo.type ?? 'bible';
 		if (textType !== 'bible') continue;
 
 		// Skip texts without content
@@ -103,7 +103,7 @@ export function buildTextIdsByLanguage(
 
 		// Get language code from lang property (3-letter ISO 639-3)
 		// or derive from langName/langNameEnglish
-		const langCode = normalizeLangCode(textInfo.lang, textInfo.langNameEnglish || textInfo.langName);
+		const langCode = normalizeLangCode(textInfo.lang, textInfo.langNameEnglish ?? textInfo.langName);
 
 		if (!langCode) continue;
 
@@ -135,7 +135,7 @@ export function buildTextIdsByLanguage(
 		// If no preferred version found or available, use the first one
 		if (!selectedTextId && texts.length > 0) {
 			// Sort by name for consistency
-			texts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+			texts.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
 			selectedTextId = texts[0].id;
 		}
 

@@ -39,11 +39,11 @@ function getConfig(): {
 	const scriptTag = scripts[scripts.length - 1] as HTMLScriptElement | null;
 
 	return {
-		appUrl: scriptTag?.dataset.appUrl || 'https://inscript.org',
+		appUrl: scriptTag?.dataset.appUrl ?? 'https://inscript.org',
 		mode: (scriptTag?.dataset.mode as 'popup' | 'link' | 'both') || 'both',
-		selector: scriptTag?.dataset.selector || 'body',
+		selector: scriptTag?.dataset.selector ?? 'body',
 		newTab: scriptTag?.dataset.newTab !== 'false',
-		language: scriptTag?.dataset.language || null,
+		language: scriptTag?.dataset.language ?? null,
 		showLogo: scriptTag?.dataset.showLogo !== 'false'
 	};
 }
@@ -75,7 +75,7 @@ async function autoInit(): Promise<void> {
 
 			language: {
 				autoDetect: !config.language,
-				primary: config.language || undefined,
+				primary: config.language ?? undefined,
 				additional: 'all'
 			},
 

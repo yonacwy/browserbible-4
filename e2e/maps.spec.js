@@ -19,8 +19,7 @@ test.describe('Maps Feature - Map Display', () => {
     await page.waitForTimeout(2000);
 
     // Verify map container exists
-    const mapContainer = page.locator('.svg-map-container, .window-maps');
-    await expect(mapContainer).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.svg-map-container, .window-maps')).toBeVisible({ timeout: 10000 });
 
     // Verify SVG element loaded
     const svgElement = page.locator('.svg-map-container svg, .window-maps svg');

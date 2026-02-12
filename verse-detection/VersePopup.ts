@@ -5,7 +5,7 @@
  * Integrates with Browser Bible 4's text loading system to fetch verse content.
  */
 
-import { config as defaultConfig, mergeConfig, VerseDetectionConfig, PartialVerseDetectionConfig } from './config.js';
+import { mergeConfig, VerseDetectionConfig, PartialVerseDetectionConfig } from './config.js';
 import type { CanonicalBookName } from './bookNames.js';
 import { BOOK_CODES, type BookCode } from './BookCodes.js';
 import {
@@ -14,7 +14,6 @@ import {
 	buildTextIdsByLanguage as buildTextIdsByLanguageUtil
 } from './LanguageCodeMapper.js';
 import {
-	SOCIAL_ICONS,
 	buildSocialShareHtml as buildSocialShareHtmlUtil,
 	handleSocialShare as handleSocialShareUtil
 } from './SocialShareHandler.js';
@@ -492,7 +491,7 @@ export class VersePopup {
 			if (target.classList.contains('bibleref') || target.classList.contains('xt')) {
 				e.preventDefault();
 				e.stopPropagation();
-				const refText = target.getAttribute('data-id') || target.getAttribute('title') || target.textContent;
+				const refText = target.getAttribute('data-id') ?? target.getAttribute('title') ?? target.textContent;
 				if (refText && this.app) {
 					this.navigateToVerse(refText);
 				}
@@ -579,7 +578,7 @@ export class VersePopup {
 		const links = container.querySelectorAll<HTMLElement>('.verse-link[data-verse-ref]');
 		links.forEach(link => {
 			// Add ARIA attributes for accessibility
-			const ref = link.dataset.verseRef || '';
+			const ref = link.dataset.verseRef ?? '';
 			link.setAttribute('role', 'button');
 			link.setAttribute('tabindex', '0');
 			link.setAttribute('aria-haspopup', 'dialog');
@@ -705,7 +704,7 @@ export class VersePopup {
 		const ref = target.dataset.verseRef;
 		if (!ref) return;
 
-		const version = target.dataset.version || undefined;
+		const version = target.dataset.version ?? undefined;
 
 		// In popup-only mode, never navigate
 		if (this.config.displayMode === 'popup') {
@@ -799,14 +798,14 @@ export class VersePopup {
 		if (!ref || !this.popup) return;
 
 		// Get detected language from data attribute
-		const detectedLang = target.dataset.detectedLang || this.config.language?.primary || 'en';
+		const detectedLang = target.dataset.detectedLang ?? this.config.language?.primary ?? 'en';
 
 		// Get explicit version override from data attribute (e.g., from "John 3:16 (KJV)")
-		const version = target.dataset.version || undefined;
+		const version = target.dataset.version ?? undefined;
 
 		// Check if text is available for this language before showing popup
 		// If an explicit version is provided, skip the language check (version overrides)
-		const textId = version || this.getTextId(detectedLang);
+		const textId = version ?? this.getTextId(detectedLang);
 		if (!textId) {
 			// No text available for this language - don't show popup
 			return;
@@ -1004,7 +1003,7 @@ export class VersePopup {
 		const contentConfig = this.config.contentSource;
 		const baseUrl = contentConfig?.baseUrl || 'https://inscript.bible.cloud/content/texts';
 		// If an explicit version is provided, use it directly as textId
-		const textId = version || this.getTextId(detectedLang);
+		const textId = version ?? this.getTextId(detectedLang);
 
 		// If no text available for this language, throw a specific error
 		if (!textId) {
@@ -1042,7 +1041,7 @@ export class VersePopup {
 	private fetchFromTextLoader(parsed: ParsedReference, detectedLang: string | null = null, version?: string): Promise<string> {
 		return new Promise((resolve, reject) => {
 			// If an explicit version is provided, use it directly as textId
-			const textId = version || this.getTextId(detectedLang);
+			const textId = version ?? this.getTextId(detectedLang);
 			if (!textId) {
 				const langName = this.getLanguageName(detectedLang);
 				reject(new Error(`No Bible text available for ${langName}`));
@@ -1071,8 +1070,8 @@ export class VersePopup {
 	 * Fetch verse content directly from files (fallback)
 	 */
 	private async fetchFromFiles(parsed: ParsedReference): Promise<string> {
-		const textId = this.config.defaultTextId || 'webbe';
-		const baseUrl = this.app?.config?.baseContentUrl || '';
+		const textId = this.config.defaultTextId ?? 'webbe';
+		const baseUrl = this.app?.config?.baseContentUrl ?? '';
 		const url = `${baseUrl}content/texts/${textId}/${parsed.sectionId}.html`;
 
 		const response = await fetch(url);
@@ -1289,7 +1288,7 @@ export class VersePopup {
 
 			const textLangCode = this.normalizeLangCode(
 				textInfo.lang,
-				textInfo.langNameEnglish || textInfo.langName
+				textInfo.langNameEnglish ?? textInfo.langName
 			);
 			return textLangCode === langCode;
 		});
@@ -1312,7 +1311,7 @@ export class VersePopup {
 
 			const langCode = this.normalizeLangCode(
 				textInfo.lang,
-				textInfo.langNameEnglish || textInfo.langName
+				textInfo.langNameEnglish ?? textInfo.langName
 			);
 
 			if (langCode) {
