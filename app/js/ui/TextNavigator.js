@@ -126,12 +126,25 @@ export function TextNavigator() {
     const divsEl = changer.querySelector('.text-navigator-divisions');
     if (divsEl) divsEl.classList.toggle('text-navigator-divisions-full', fullBookMode);
 
-    for (let i = 0; i < textInfo.divisions.length; i++) {
-      const divisionid = textInfo.divisions[i];
-      if (!BOOK_DATA[divisionid]) continue;
+    // Ensure we have a divisions array. If not provided, derive from sections.
+    const divisionsArray = (Array.isArray(textInfo?.divisions) && textInfo.divisions.length)
+      ? textInfo.divisions
+      : (Array.isArray(textInfo?.sections) ? Array.from(new Set(textInfo.sections.map(s => s.substring(0, 2)))) : []);
 
-      const divisionName = textInfo.divisionNames?.[i] ?? null;
-      const divisionAbbr = textInfo.divisionAbbreviations?.[i] ?? null;
+    console.info('TextNavigator: renderDivisions divisionsArray=', divisionsArray);
+
+    for (let i = 0; i < divisionsArray.length; i++) {
+      const divisionid = divisionsArray[i];
+      if (!divisionid || !BOOK_DATA[divisionid]) continue;
+
+      // Prefer provided names/abbreviations; fall back to BOOK_DATA when missing
+      const divisionName = (Array.isArray(textInfo?.divisionNames) && textInfo.divisionNames[i])
+        || (textInfo?.divisionNames && textInfo.divisions ? textInfo.divisionNames[textInfo.divisions.indexOf(divisionid)] : null)
+        || BOOK_DATA[divisionid]?.name
+        || null;
+      const divisionAbbr = (Array.isArray(textInfo?.divisionAbbreviations) && textInfo.divisionAbbreviations[i])
+        || (textInfo?.divisionAbbreviations && textInfo.divisions ? textInfo.divisionAbbreviations[textInfo.divisions.indexOf(divisionid)] : null)
+        || null;
 
       if (OT_BOOKS.includes(divisionid) && !printed.ot) {
         fragment.appendChild(elem('div', { className: 'text-navigator-division-header', textContent: i18n.t('windows.bible.ot') }));
@@ -190,6 +203,17 @@ export function TextNavigator() {
 
     renderSections(true);
   });
+
+  // Debug: log any pointerdown inside the navigator to trace click targets
+  changer.addEventListener('pointerdown', (e) => {
+    try {
+      const target = e.target;
+      const classes = target && target.className ? target.className : '';
+      console.info('TextNavigator: pointerdown target=', target, 'classes=', classes);
+    } catch (err) {
+      console.warn('TextNavigator: pointerdown error', err);
+    }
+  }, { capture: true });
 
   function buildChapterElements(chapters) {
     const numbers = textInfo.numbers ?? bibleNumbers.default;
@@ -252,6 +276,8 @@ export function TextNavigator() {
 
     el.classList.add('selected');
     const sectionid = el.getAttribute('data-id');
+
+    console.info('TextNavigator: section click', { sectionid, target });
 
     ext.trigger('change', { type: 'change', target: el, data: { sectionid: sectionid, target: target } });
     hide();
@@ -329,6 +355,7 @@ export function TextNavigator() {
   function setTarget(_container, _target) {
     container = _container;
     target = _target;
+    console.info('TextNavigator: setTarget', { container, target });
   }
 
   function getTarget() {

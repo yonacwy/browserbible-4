@@ -20,6 +20,8 @@
     "vd:dev": "vite --config verse-detection/vite.config.js serve verse-detection",
     "vd:build": "vite --config verse-detection/vite.config.ts build && vite --config verse-detection/vite.config.auto.ts build",
     "vd:preview": "vite --config verse-detection/vite.config.js preview verse-detection"
+    ,
+    "generate:texts": "node ./scripts/generate-texts-manifest.js"
   },
   "dependencies": {
     "@browserbible/verse-detection": "workspace:*"

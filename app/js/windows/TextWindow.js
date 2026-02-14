@@ -368,6 +368,17 @@ export class TextWindowComponent extends BaseWindow {
       sectionid = fragmentid.split('_')[0];
     }
 
+    // If still no section id, fall back to configured default fragment or first section
+    if (!sectionid) {
+      const cfg = this.config || this.getParam('config') || {};
+      const defaultFrag = (cfg && cfg.newWindowFragmentid) || (this.config && this.config.newWindowFragmentid) || null;
+      if (defaultFrag) {
+        sectionid = defaultFrag.split('_')[0];
+      } else if (this.state.currentTextInfo?.sections?.length > 0) {
+        sectionid = this.state.currentTextInfo.sections[0];
+      }
+    }
+
     this.scroller.load('text', sectionid, fragmentid);
   }
 

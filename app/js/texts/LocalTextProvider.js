@@ -77,37 +77,77 @@ export function getTextManifest(callback) {
 }
 
 export function getTextInfo(textid, callback, errorCallback) {
-  fetchTextInfo(textData, 'content/texts', textid, callback, errorCallback);
+  // Try standard location first, then fall back to html_chapterized/info.json
+  fetchTextInfo(textData, 'content/texts', textid, (data) => {
+    callback(data);
+  }, (err) => {
+    console.info('LocalTextProvider: info.json not found at root, trying html_chapterized for', textid);
+    // use textid/html_chapterized as the textid so fetchTextInfo will look at
+    // content/texts/<textid>/html_chapterized/info.json
+    const fallbackId = `${textid}/html_chapterized`;
+    fetchTextInfo(textData, 'content/texts', fallbackId, (data) => {
+      // normalize cache key so callers can still reference by original id
+      textData[textid] = data;
+      callback(data);
+    }, (err2) => {
+      console.warn('LocalTextProvider: no info.json found for', textid);
+      errorCallback?.(err2 || err);
+    });
+  });
 }
 
 export function loadSection(textid, sectionid, callback, errorCallback) {
   getTextInfo(textid, textInfo => {
     const config = getConfig();
-    const url = `${config.baseContentUrl}content/texts/${textid}/${sectionid}.html`;
+    const urlBase = `${config.baseContentUrl}content/texts/${textid}/`;
+    const tryUrls = [
+      `${urlBase}${sectionid}.html`,
+      `${urlBase}html_chapterized/${sectionid}.html`
+    ];
 
-    fetch(url)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.text();
-      })
-      .then(text => {
-        const htmlContent = text.includes('</head>') ? text.split('</head>')[1] : text;
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-
-        const content = tempDiv.querySelector('.section');
-        const notes = tempDiv.querySelectorAll('.footnotes .footnote');
-
-        if (notes.length > 0) processFootnotes(content, notes);
-        processContent(content, textInfo, textid);
-
-        const wrapperDiv = document.createElement('div');
-        if (content) wrapperDiv.appendChild(content);
-        callback(wrapperDiv.innerHTML);
-      })
-      .catch(error => {
+    const tryFetch = (index) => {
+      if (index >= tryUrls.length) {
         errorCallback?.(textid, sectionid);
-      });
+        return;
+      }
+
+      const url = tryUrls[index];
+      console.info('LocalTextProvider: attempting to fetch', url);
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        })
+        .then(text => {
+          console.info('LocalTextProvider: fetched', url, 'length=', text.length);
+          const htmlContent = text.includes('</head>') ? text.split('</head>')[1] : text;
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+
+          const content = tempDiv.querySelector('.section');
+          // If the fetched HTML doesn't contain a section element, try the next fallback URL
+          if (!content) {
+            console.warn('LocalTextProvider: no .section found in', url, 'trying next fallback');
+            tryFetch(index + 1);
+            return;
+          }
+
+          const notes = tempDiv.querySelectorAll('.footnotes .footnote');
+
+          if (notes.length > 0) processFootnotes(content, notes);
+          processContent(content, textInfo, textid);
+
+          const wrapperDiv = document.createElement('div');
+          if (content) wrapperDiv.appendChild(content);
+          callback(wrapperDiv.innerHTML);
+        })
+        .catch((err) => {
+          console.warn('LocalTextProvider: fetch failed for', url, err && err.message);
+          tryFetch(index + 1);
+        });
+    };
+
+    tryFetch(0);
   });
 }
 

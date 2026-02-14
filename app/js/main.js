@@ -143,6 +143,12 @@ async function init() {
     }
   }
 
+  // If the app is offline, prefer local content files so `content/texts/*` loads
+  // from the local server/root instead of the remote `baseContentUrl`.
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    updateConfig({ baseContentUrl: '', enableOnlineSources: false });
+  }
+
   // Load custom CSS
   const finalConfig = getConfig();
   if (finalConfig.customCssUrl) {

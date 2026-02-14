@@ -4,6 +4,13 @@ dist/
 app/content/texts/
 !app/content/texts/README.md
 
+# Allow tracking of the ENGWEB bible content added by the user
+# Keep local bible bundles ignored (do not commit large bible content)
+# Allow only the generated manifests `texts.json` and `commentaries.json` to be tracked
+!app/content/texts/texts.json
+!app/content/commentaries/commentaries.json
+!app/content/texts/.gitkeep
+
 downloads/*
 
 **/node_modules/
