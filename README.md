@@ -17,7 +17,7 @@ pnpm dev
 
 If you want to use local bible packs (for offline use or testing), follow these steps:
 
-1. Download a starter bible pack and extract it into `app/content/texts`:
+1. Download a starter bible pack and extract it into `app/content/texts`: create the app/content/texts folder if doesnt exist.
 
 ```bash
 wget https://bibles.dbs.org/_assets/starter-pack.zip (if wget doesnt work just download via browser)
